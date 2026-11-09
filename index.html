@@ -1,151 +1,1404 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0e1318">
-  <meta name="description" content="Aplicación web de CONTROL para un vehículo IoT: joystick virtual, comandos y DEMO sobre API REST y WebSocket en AWS.">
-  <title>Control IoT · Vehículo</title>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
-  <link rel="stylesheet" href="css/styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>RETRO-X · Control IoT 4.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#05070d; --cian:#00f0ff; --magenta:#ff2bd6; --ambar:#ffb627; --verde:#39ff88; --rojo:#ff3355;
+  --vidrio:rgba(14,22,38,.62); --linea:rgba(0,240,255,.18); --tenue:#6f86a8; --texto:#d9f4ff;
+  --hud:'Orbitron',system-ui,sans-serif; --ui:'Rajdhani',system-ui,sans-serif; --mono:'JetBrains Mono',Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  font-family:var(--ui);color:var(--texto);background:var(--bg);overflow-x:hidden;
+  background-image:
+    radial-gradient(1200px 600px at 15% -10%,rgba(0,240,255,.13),transparent 60%),
+    radial-gradient(900px 600px at 110% 110%,rgba(255,43,214,.12),transparent 60%),
+    linear-gradient(rgba(0,240,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,240,255,.035) 1px,transparent 1px);
+  background-size:auto,auto,40px 40px,40px 40px;
+}
+body::after{ /* scanlines */
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);mix-blend-mode:overlay;
+}
+/* ---------- barra superior ---------- */
+.top{display:flex;align-items:center;gap:18px;padding:14px 26px;border-bottom:1px solid var(--linea);
+  background:linear-gradient(180deg,rgba(0,240,255,.07),transparent);backdrop-filter:blur(6px);position:sticky;top:0;z-index:20}
+.logo{font-family:var(--hud);font-weight:900;font-size:22px;letter-spacing:.18em;
+  background:linear-gradient(90deg,var(--cian),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 10px rgba(0,240,255,.35))}
+.logo small{display:block;font-family:var(--ui);font-weight:600;font-size:11px;letter-spacing:.35em;color:var(--tenue);-webkit-text-fill-color:var(--tenue)}
+.top .esp{flex:1}
+.chip{display:flex;align-items:center;gap:8px;font-family:var(--hud);font-size:11px;letter-spacing:.12em;padding:7px 12px;
+  border:1px solid var(--linea);border-radius:8px;background:var(--vidrio);white-space:nowrap}
+.chip b{color:var(--cian);font-weight:700}
+.senal{display:flex;gap:2px;align-items:flex-end;height:14px}
+.senal i{width:4px;background:#1d2a40;border-radius:1px}
+.senal i:nth-child(1){height:30%}.senal i:nth-child(2){height:55%}.senal i:nth-child(3){height:80%}.senal i:nth-child(4){height:100%}
+.senal.on i{background:var(--verde);box-shadow:0 0 6px var(--verde)}
+select.hud,input.hud{font-family:var(--hud);font-size:11px;letter-spacing:.1em;color:var(--texto);background:#060b16;
+  border:1px solid var(--linea);border-radius:8px;padding:8px 10px;outline:none}
+input.hud:focus,select.hud:focus{border-color:var(--cian);box-shadow:0 0 0 2px rgba(0,240,255,.15)}
+/* ---------- layout ---------- */
+.escena{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(330px,.85fr);gap:22px;padding:22px 26px;max-width:1500px;margin:auto}
+@media (max-width:1100px){.escena{grid-template-columns:1fr}}
+.panel{position:relative;background:var(--vidrio);border:1px solid var(--linea);border-radius:16px;backdrop-filter:blur(10px);
+  box-shadow:0 0 0 1px rgba(0,0,0,.4) inset,0 20px 60px rgba(0,0,0,.45)}
+.panel::before,.panel::after{content:"";position:absolute;width:18px;height:18px;border:2px solid var(--cian);opacity:.7}
+.panel::before{top:-1px;left:-1px;border-right:0;border-bottom:0;border-top-left-radius:16px}
+.panel::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-bottom-right-radius:16px}
+.titulo{font-family:var(--hud);font-size:11px;letter-spacing:.32em;color:var(--tenue);padding:14px 18px 0;display:flex;justify-content:space-between}
+.titulo b{color:var(--cian);font-weight:700}
+/* ---------- arena ---------- */
+.arena{position:relative;height:470px;margin:12px;border-radius:12px;overflow:hidden;border:1px solid rgba(0,240,255,.12);background:#03060c}
+.arena canvas{width:100%;height:100%;display:block}
+.hudTL,.hudTR,.hudBL,.hudBR{position:absolute;font-family:var(--mono);font-size:11px;color:var(--cian);text-shadow:0 0 6px rgba(0,240,255,.6);line-height:1.6}
+.hudTL{top:12px;left:14px}.hudTR{top:12px;right:14px;text-align:right}.hudBL{bottom:12px;left:14px}.hudBR{bottom:12px;right:14px;text-align:right}
+.etq{color:var(--tenue)}
+.cmdGrande{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-family:var(--hud);font-weight:900;font-size:20px;letter-spacing:.2em;
+  padding:6px 18px;border-radius:8px;border:1px solid rgba(0,240,255,.35);background:rgba(0,10,20,.6);text-shadow:0 0 12px var(--cian);white-space:nowrap}
+.cmdGrande.alto{color:var(--rojo);border-color:rgba(255,51,85,.5);text-shadow:0 0 12px var(--rojo)}
+.autopiloto{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;padding-bottom:46px;pointer-events:none}
+.autopiloto.on{display:flex}
+.autopiloto span{font-family:var(--hud);font-size:12px;letter-spacing:.4em;color:var(--magenta);text-shadow:0 0 10px var(--magenta);animation:parpadeo 1.1s infinite}
+@keyframes parpadeo{50%{opacity:.25}}
+/* ---------- control remoto ---------- */
+.remoto{margin:46px 12px 14px;padding:22px 26px 26px;border-radius:30px 30px 60px 60px;position:relative;
+  background:linear-gradient(160deg,#131c2e,#090e19 60%,#0c1322);border:1px solid rgba(0,240,255,.2);
+  box-shadow:0 2px 0 rgba(255,255,255,.06) inset,0 -10px 30px rgba(0,0,0,.6) inset,0 25px 50px rgba(0,0,0,.55)}
+.remoto .antena{position:absolute;top:-34px;right:70px;width:8px;height:40px;border-radius:4px 4px 0 0;background:linear-gradient(#2a3a55,#111a2a)}
+.remoto .antena::before{content:"";position:absolute;top:-8px;left:-3px;width:14px;height:14px;border-radius:50%;background:var(--rojo);box-shadow:0 0 12px var(--rojo)}
+.remoto .antena.tx::before{background:var(--verde);box-shadow:0 0 16px var(--verde)}
+.cuerpo{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center}
+@media (max-width:640px){.cuerpo{grid-template-columns:1fr 1fr}.centro{grid-column:1/-1;order:-1}}
+.stick{display:flex;flex-direction:column;align-items:center;gap:10px}
+.stick .nombre{font-family:var(--hud);font-size:10px;letter-spacing:.3em;color:var(--tenue)}
+.base{position:relative;width:196px;height:196px;border-radius:50%;touch-action:none;cursor:grab;
+  background:radial-gradient(circle at 50% 50%,#0b1220 0 38%,#101a2c 39% 60%,#0a1120 61%);
+  border:2px solid rgba(0,240,255,.25);box-shadow:0 0 25px rgba(0,240,255,.08) inset,0 8px 20px rgba(0,0,0,.6)}
+.base::before{content:"";position:absolute;inset:14px;border-radius:50%;border:1px dashed rgba(0,240,255,.18)}
+.dir{position:absolute;font-family:var(--hud);font-size:9px;letter-spacing:.08em;color:#4a5f80;transition:.15s;pointer-events:none;text-align:center;line-height:1.2}
+.dir kbd{display:block;font-family:var(--mono);font-size:10px;color:var(--ambar);opacity:.8}
+.dir.n{top:6px;left:50%;transform:translateX(-50%)}.dir.s{bottom:6px;left:50%;transform:translateX(-50%)}
+.dir.o{left:6px;top:50%;transform:translateY(-50%)}.dir.e{right:6px;top:50%;transform:translateY(-50%)}
+.dir.activa{color:var(--cian);text-shadow:0 0 10px var(--cian)}
+.dir.off{opacity:.25}
+.perilla{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#3d5577,#18233a 55%,#0b1222);border:2px solid rgba(0,240,255,.45);
+  box-shadow:0 0 18px rgba(0,240,255,.35),0 10px 18px rgba(0,0,0,.6);transition:transform .18s cubic-bezier(.3,1.6,.5,1)}
+.perilla::after{content:"";position:absolute;inset:16px;border-radius:50%;border:2px solid rgba(0,240,255,.5)}
+.base.arrastrando{cursor:grabbing}.base.arrastrando .perilla{transition:none;border-color:var(--cian)}
+.base.bloq{opacity:.35;pointer-events:none;filter:grayscale(.6)}
+.centro{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:210px}
+.lcd{width:220px;padding:10px 12px;border-radius:10px;background:#071a12;border:1px solid #1d4d36;box-shadow:0 0 20px rgba(57,255,136,.12) inset;
+  font-family:var(--mono);font-size:11px;color:var(--verde);text-shadow:0 0 6px rgba(57,255,136,.6);line-height:1.55}
+.lcd .fila{display:flex;justify-content:space-between}
+.lcd .grande{font-family:var(--hud);font-size:14px;letter-spacing:.12em;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.botonStop{width:96px;height:96px;border-radius:50%;cursor:pointer;border:none;font-family:var(--hud);font-weight:900;font-size:15px;letter-spacing:.15em;color:#fff;
+  background:radial-gradient(circle at 35% 30%,#ff7a8e,#ff2448 45%,#a3001c);
+  box-shadow:0 0 0 6px #1a0d12,0 0 0 8px rgba(255,51,85,.5),0 0 30px rgba(255,51,85,.55),0 10px 20px rgba(0,0,0,.6);transition:transform .08s}
+.botonStop:active,.botonStop.pulsado{transform:scale(.93)}
+.botonStop:disabled{filter:grayscale(1);opacity:.4;cursor:not-allowed}
+.interruptores{display:flex;gap:14px;align-items:center}
+.switch{display:flex;align-items:center;gap:8px;font-family:var(--hud);font-size:9px;letter-spacing:.2em;color:var(--tenue);cursor:pointer;user-select:none}
+.switch input{display:none}
+.switch .riel{width:38px;height:20px;border-radius:20px;background:#0a1120;border:1px solid rgba(0,240,255,.25);position:relative;transition:.2s}
+.switch .riel::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#3a4a66;transition:.2s}
+.switch input:checked+.riel{background:rgba(0,240,255,.15);border-color:var(--cian)}
+.switch input:checked+.riel::after{left:20px;background:var(--cian);box-shadow:0 0 10px var(--cian)}
+.aux{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+.btnHud{font-family:var(--hud);font-size:10px;letter-spacing:.18em;color:var(--texto);padding:9px 14px;border-radius:8px;cursor:pointer;
+  background:linear-gradient(180deg,#14203a,#0b1222);border:1px solid rgba(0,240,255,.3);transition:.15s}
+.btnHud:hover:not(:disabled){border-color:var(--cian);box-shadow:0 0 14px rgba(0,240,255,.3)}
+.btnHud:disabled{opacity:.35;cursor:not-allowed}
+.btnHud.magenta{border-color:rgba(255,43,214,.45)}.btnHud.magenta:hover:not(:disabled){border-color:var(--magenta);box-shadow:0 0 14px rgba(255,43,214,.35)}
+.btnHud.rojo{border-color:rgba(255,51,85,.5);color:#ffb3c0}
+/* ---------- panel lateral ---------- */
+.lado{display:flex;flex-direction:column;gap:22px}
+.telemetria{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 18px 18px}
+.medidor{padding:10px 12px;border-radius:10px;border:1px solid rgba(0,240,255,.12);background:rgba(3,8,16,.6)}
+.medidor small{display:block;font-family:var(--hud);font-size:9px;letter-spacing:.25em;color:var(--tenue);margin-bottom:5px}
+.medidor b{font-family:var(--hud);font-size:15px;letter-spacing:.06em}
+.barraPala{height:6px;border-radius:6px;background:#0a1322;margin-top:8px;overflow:hidden}
+.barraPala div{height:100%;width:0;background:linear-gradient(90deg,var(--ambar),var(--magenta));box-shadow:0 0 10px var(--ambar);transition:width .2s}
+.demos{padding:12px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.cartucho{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid rgba(255,43,214,.25);
+  background:linear-gradient(90deg,rgba(255,43,214,.08),transparent)}
+.anillo{--p:0;width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;font-family:var(--hud);font-size:11px;
+  background:conic-gradient(var(--magenta) calc(var(--p)*1%),#1a2033 0);box-shadow:0 0 12px rgba(255,43,214,.25)}
+.anillo span{width:36px;height:36px;border-radius:50%;background:#0a0f1c;display:grid;place-items:center}
+.cartucho .info{flex:1;min-width:0}
+.cartucho .info b{display:block;font-family:var(--hud);font-size:12px;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cartucho .info small{color:var(--tenue);font-size:13px}
+.lista{list-style:none;margin:0;padding:8px 18px 18px;max-height:290px;overflow:auto}
+.lista li{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,240,255,.07);font-size:15px}
+.lista li .id{font-family:var(--mono);font-size:11px;color:var(--tenue)}
+.lista li .org{font-family:var(--hud);font-size:9px;letter-spacing:.15em;padding:3px 7px;border-radius:5px;border:1px solid rgba(0,240,255,.25);color:var(--cian)}
+.lista li .hora{grid-column:2/4;font-family:var(--mono);font-size:10px;color:var(--tenue);margin-top:-6px}
+.lista li.nuevo{animation:entra .7s}
+@keyframes entra{from{background:rgba(0,240,255,.18)}to{background:transparent}}
+.terminal{margin:8px 14px 16px;height:220px;overflow:auto;padding:10px 12px;border-radius:10px;background:#02050a;border:1px solid rgba(0,240,255,.1);
+  font-family:var(--mono);font-size:11px;line-height:1.55}
+.terminal div{white-space:pre-wrap;word-break:break-word;color:#7f95b5}
+.terminal .mov{color:var(--cian)}.terminal .demo{color:var(--magenta)}.terminal .ok{color:var(--verde)}.terminal .err{color:var(--rojo)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);opacity:0;transition:.25s;z-index:60;
+  font-family:var(--hud);font-size:11px;letter-spacing:.15em;padding:12px 18px;border-radius:10px;background:rgba(40,8,18,.92);border:1px solid var(--rojo);box-shadow:0 0 25px rgba(255,51,85,.35)}
+.toast.ver{opacity:1;transform:translate(-50%,0)}
+.toast.ok{background:rgba(6,30,20,.92);border-color:var(--verde);box-shadow:0 0 25px rgba(57,255,136,.3)}
+.estado3{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:6px 10px 0}
+.ind{font-family:var(--hud);font-size:10px;letter-spacing:.08em;border:1px solid #2a3a58;border-radius:999px;padding:5px 11px;background:#0a1020;color:#9fb3d6;display:inline-flex;gap:6px;align-items:center}
+.ind b{font-weight:700}.ind.ok{border-color:#1fbf75;color:#7dffc0}.ind.warn{border-color:#e0a82e;color:#ffd36b}.ind.mal{border-color:#e5484d;color:#ff9a9d}
+.pie{font-family:var(--hud);font-size:9px;letter-spacing:.3em;color:#3c4d6a;text-align:center;padding:4px 0 18px}
+
+/* ================== teléfono ================== */
+.engrane,.pestanas{display:none}
+.ajustes{display:contents}
+body{overscroll-behavior:none}
+.remoto,.top,.pestanas{-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.dir .movil{display:none}
+html{overflow-x:hidden}
+.logo{white-space:nowrap}
+@media (max-width:760px), (max-height:520px) and (orientation:landscape){
+  .soloPc{display:none}
+  .chip{padding:6px 9px;font-size:9px}
+  .engrane{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;font-size:20px;color:var(--cian);cursor:pointer;
+    background:var(--vidrio);border:1px solid var(--linea);transition:.25s}
+  .top{flex-wrap:wrap}
+  .top.abierto .engrane{transform:rotate(90deg);border-color:var(--cian);box-shadow:0 0 14px rgba(0,240,255,.35)}
+  .ajustes{display:none;order:9;width:100%;flex-direction:column;gap:8px;padding-top:6px}
+  .top.abierto .ajustes{display:flex}
+  .ajustes .hud{width:100%;font-size:13px;padding:11px 12px}
+  .dir kbd,.dir .pal{display:none}
+  .dir .movil{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:7px;letter-spacing:.12em}
+  .dir .movil i{font-style:normal;font-size:17px;line-height:1}
+  .dir.o .movil,.dir.e .movil{max-width:44px}
+  .pestanas{display:flex;gap:6px;position:sticky;top:0;z-index:5;padding:4px;border-radius:12px;background:rgba(5,7,13,.85);
+    border:1px solid var(--linea);backdrop-filter:blur(8px)}
+  .pestanas button{flex:1;padding:10px 4px;border-radius:9px;border:0;background:transparent;color:var(--tenue);cursor:pointer;
+    font-family:var(--hud);font-size:9px;letter-spacing:.14em}
+  .pestanas button.activa{background:linear-gradient(180deg,rgba(0,240,255,.18),rgba(0,240,255,.05));color:var(--cian);
+    box-shadow:0 0 0 1px rgba(0,240,255,.4) inset,0 0 14px rgba(0,240,255,.2)}
+  .lado>.panel{display:none}.lado>.panel.activo{display:block;animation:entraPanel .25s}
+  .lista{max-height:none}.terminal{height:240px}
+  .toast{width:calc(100% - 28px);text-align:center;bottom:max(18px,env(safe-area-inset-bottom))}
+}
+@media (max-width:760px){
+  body{background-size:auto,auto,28px 28px,28px 28px}
+  .top{gap:8px;padding:10px 12px;padding-top:max(10px,env(safe-area-inset-top));flex-wrap:wrap}
+  .logo{font-size:17px}.logo small{font-size:8px;letter-spacing:.3em}
+  .escena{padding:10px;gap:12px}
+  .panel::before,.panel::after{width:12px;height:12px}
+  .titulo{padding:10px 12px 0;font-size:9px;letter-spacing:.22em}
+  .arena{height:min(42vh,340px);margin:8px}
+  .cmdGrande{font-size:13px;padding:5px 12px;top:10px;letter-spacing:.14em;max-width:70%;overflow:hidden;text-overflow:ellipsis}
+  .hudTL,.hudTR,.hudBL,.hudBR{font-size:9px;line-height:1.45}
+  .hudTL,.hudTR{top:46px}
+  .autopiloto{padding-bottom:30px}.autopiloto span{font-size:9px;letter-spacing:.25em}
+  .remoto{margin:8px 8px 10px;padding:14px 12px 18px;border-radius:22px 22px 40px 40px}
+  .remoto .antena{display:none}
+  .cuerpo{grid-template-columns:1fr 1fr;gap:10px 8px}
+  .centro{grid-column:1/-1;order:-1;flex-direction:row;justify-content:space-between;min-width:0;gap:10px;position:relative;padding-bottom:30px}
+  .lcd{width:auto;flex:1;min-width:0;font-size:10px;padding:8px 10px}
+  .lcd .grande{font-size:12px}
+  .botonStop{width:74px;height:74px;font-size:13px;flex:none}
+  .interruptores{position:absolute;left:0;right:0;bottom:0;justify-content:center}
+  .base{width:min(43vw,190px);height:min(43vw,190px)}
+  .perilla{width:58px;height:58px;margin:-29px 0 0 -29px}
+  .dir{font-size:8px}
+  .aux{margin-top:12px}
+  .lado{gap:10px}
+  .pie{padding-bottom:max(18px,env(safe-area-inset-bottom))}
+}
+@keyframes entraPanel{from{opacity:0;transform:translateY(6px)}}
+/* teléfono acostado: modo gamepad (joystick | radar | joystick) */
+@media (max-height:520px) and (orientation:landscape){
+  .top{padding:6px 14px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  .logo small{display:none}
+  .logo{font-size:16px}
+  .top{gap:8px}
+  .escena{display:block;padding:6px 10px}
+  .principal{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;
+    column-gap:14px;height:calc(100dvh - 64px);padding:8px 14px;
+    padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  .principal>.titulo{display:none}
+  .remoto,.cuerpo{display:contents}
+  .remoto .antena,.stick .nombre{display:none}
+  #cajaIzq{grid-column:1;grid-row:1/3;align-self:center}
+  #cajaDer{grid-column:3;grid-row:1/3;align-self:center}
+  .arena{grid-column:2;grid-row:1;height:auto;min-height:0;margin:0}
+  .cmdGrande{top:auto;bottom:10px;font-size:13px;padding:5px 12px;letter-spacing:.14em}
+  .hudTL,.hudTR{font-size:9px;line-height:1.45}
+  .hudBL,.hudBR{display:none}
+  .autopiloto{align-items:center;padding-bottom:0}
+  .centro{grid-column:2;grid-row:2;flex-direction:row;justify-content:center;align-items:center;padding:8px 0 0;gap:12px;order:0}
+  .interruptores{position:static}
+  .centro .lcd{flex:0 1 230px}
+  .botonStop{width:62px;height:62px;font-size:12px}
+  .base{width:min(40vh,200px);height:min(40vh,200px)}
+  .aux{display:none}
+  .lado{margin-top:12px}
+}
+
+/* ================== arranque ================== */
+.arranque{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:radial-gradient(900px 500px at 50% 40%,rgba(0,240,255,.12),#02040a 70%);
+  transition:opacity .6s,visibility .6s}
+.arranque.fuera{opacity:0;visibility:hidden}
+.arranque::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,240,255,.04) 0 1px,transparent 1px 4px);pointer-events:none}
+.arrCaja{position:relative;width:min(560px,92vw);padding:28px 28px 22px;border:1px solid var(--linea);border-radius:18px;background:rgba(6,12,24,.75);
+  box-shadow:0 0 60px rgba(0,240,255,.12),0 0 0 1px rgba(0,0,0,.6) inset}
+.arrLogo{font-family:var(--hud);font-weight:900;font-size:clamp(34px,9vw,56px);letter-spacing:.2em;text-align:center;
+  background:linear-gradient(90deg,var(--cian),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 18px rgba(0,240,255,.45));animation:glitch 3s infinite}
+@keyframes glitch{0%,92%,100%{transform:none}93%{transform:translate(2px,-1px) skewX(6deg)}95%{transform:translate(-2px,1px)}97%{transform:skewX(-4deg)}}
+.arrSub{text-align:center;font-family:var(--hud);font-size:10px;letter-spacing:.45em;color:var(--tenue);margin:4px 0 20px}
+.arrLineas{font-family:var(--mono);font-size:12px;line-height:1.9;min-height:150px}
+.arrLineas div{display:flex;justify-content:space-between;gap:12px;color:#8fa6c6;animation:entraLinea .25s}
+.arrLineas div b{font-weight:600;white-space:nowrap}
+.arrLineas .ok b{color:var(--verde);text-shadow:0 0 8px rgba(57,255,136,.6)}
+.arrLineas .mal b{color:var(--rojo);text-shadow:0 0 8px rgba(255,51,85,.6)}
+.arrLineas .esp b{color:var(--ambar)}
+@keyframes entraLinea{from{opacity:0;transform:translateX(-8px)}}
+.arrBarra{height:4px;border-radius:4px;background:#0b1424;margin:16px 0 18px;overflow:hidden}
+.arrBarra div{height:100%;width:0;background:linear-gradient(90deg,var(--cian),var(--magenta));box-shadow:0 0 12px var(--cian);transition:width .35s}
+.arrBoton{display:block;width:100%;padding:15px;border-radius:12px;cursor:pointer;font-family:var(--hud);font-weight:700;font-size:14px;letter-spacing:.3em;
+  color:#fff;background:linear-gradient(90deg,rgba(0,240,255,.25),rgba(255,43,214,.25));border:1px solid var(--cian);box-shadow:0 0 24px rgba(0,240,255,.3)}
+.arrBoton.listo{animation:latido 1.3s infinite}
+@keyframes latido{50%{box-shadow:0 0 40px rgba(0,240,255,.65),0 0 0 4px rgba(0,240,255,.15)}}
+.arrSaltar{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:12px;font-size:13px;color:var(--tenue);cursor:pointer}
+/* ================== escena 3D ================== */
+.escena3d{position:absolute;inset:0;display:none}
+.escena3d canvas{display:block;width:100%!important;height:100%!important;touch-action:none}
+.arena.modo3d{height:540px}
+.arena.modo3d .escena3d{display:block}
+.arena.modo3d #radar{position:absolute;right:12px;bottom:12px;width:150px;height:150px;border-radius:50%;
+  background:rgba(3,6,12,.72);border:1px solid rgba(0,240,255,.35);box-shadow:0 0 18px rgba(0,240,255,.2);pointer-events:none}
+.arena.modo3d .hudBR{right:auto;left:14px;bottom:52px;text-align:left}
+.arena.modo3d .hudBL{bottom:70px}
+.arena.modo3d .autopiloto{padding-bottom:70px}
+.herr3d{position:absolute;left:12px;bottom:12px;display:flex;gap:6px;z-index:2}
+.btnMini{font-family:var(--hud);font-size:9px;letter-spacing:.18em;color:var(--cian);padding:7px 10px;border-radius:8px;cursor:pointer;
+  background:rgba(3,8,16,.75);border:1px solid rgba(0,240,255,.3);backdrop-filter:blur(4px)}
+.btnMini:hover{border-color:var(--cian);box-shadow:0 0 12px rgba(0,240,255,.3)}
+.btnMini.apagado{color:var(--tenue);border-color:rgba(111,134,168,.3)}
+#btnCam{display:none}.arena.modo3d #btnCam{display:inline-block}
+@media (max-width:760px){
+  .arena.modo3d{height:min(48vh,400px)}
+  .arena.modo3d #radar{width:96px;height:96px;right:8px;bottom:8px}
+  .arena.modo3d .hudBL,.arena.modo3d .hudBR{display:none}
+  .arena.modo3d .autopiloto{padding-bottom:50px}
+  .herr3d{left:8px;bottom:8px}
+}
+@media (max-height:520px) and (orientation:landscape){
+  .arena.modo3d{height:auto}
+  .arena.modo3d #radar{width:82px;height:82px;right:6px;bottom:6px}
+  .arena.modo3d .cmdGrande{bottom:auto;top:8px}
+  .herr3d{left:6px;bottom:6px}
+}
+</style>
 </head>
 <body>
-  <a class="visually-hidden-focusable skip" href="#control">Saltar al control</a>
 
-  <header class="app-header">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true"><i class="bi bi-joystick"></i></span>
-      <div>
-        <h1 class="brand-title">Control IoT</h1>
-        <p id="vehicleName" class="brand-sub">Cargando vehículo…</p>
-      </div>
-    </div>
-    <button id="btnKey" class="btn btn-key" type="button" data-state="empty" aria-label="Falta la llave de acceso. Configurar">
-      <i class="bi bi-key" aria-hidden="true"></i><span class="d-none d-sm-inline">Llave de acceso</span>
-    </button>
-  </header>
-
-  <!-- Tres indicadores INDEPENDIENTES: texto + icono + color -->
-  <section class="status-panel" aria-label="Estado de las conexiones">
-    <div class="status-card" id="st-ws" data-state="connecting" data-tone="warn">
-      <i data-role="icon" class="bi bi-arrow-repeat spin" aria-hidden="true"></i>
-      <div><div class="status-name">WebSocket WSS</div><div class="status-text" data-role="text">Conectando…</div></div>
-    </div>
-    <div class="status-card" id="st-api" data-state="checking" data-tone="warn">
-      <i data-role="icon" class="bi bi-arrow-repeat spin" aria-hidden="true"></i>
-      <div><div class="status-name">Servidor AWS · API de 21 servicios</div><div class="status-text" data-role="text">Comprobando…</div></div>
-    </div>
-    <div class="status-card" id="st-db" data-state="unverified" data-tone="idle">
-      <i data-role="icon" class="bi bi-question-circle-fill" aria-hidden="true"></i>
-      <div><div class="status-name">Base de datos · Amazon RDS</div><div class="status-text" data-role="text">Sin verificar</div></div>
-    </div>
-  </section>
-
-  <div id="loadError" class="load-error" role="alert" hidden>
-    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
-    <span>No se pudieron cargar los datos del vehículo desde la API.</span>
-    <button id="btnReload" class="btn btn-sm btn-outline-light" type="button">Reintentar</button>
+<!-- ======= Secuencia de arranque ======= -->
+<div id="arranque" class="arranque">
+  <div class="arrCaja">
+    <div class="arrLogo">RETRO-X</div>
+    <div class="arrSub">IOT COMMAND LINK · PRÁCTICA 2.5</div>
+    <div class="arrLineas" id="arrLineas"></div>
+    <div class="arrBarra"><div id="arrBarra"></div></div>
+    <button id="arrBoton" class="arrBoton">SALTAR ▸</button>
+    <label class="arrSaltar"><input type="checkbox" id="arrSesion"> no mostrar otra vez en esta sesión</label>
   </div>
+</div>
 
-  <main id="control" class="layout">
-    <!-- Joystick + DETENER -->
-    <section class="panel panel-joystick" aria-labelledby="h-joy">
-      <h2 id="h-joy" class="panel-title">Joystick</h2>
-      <div id="joystick" class="joystick" role="application" tabindex="0" data-direction="neutral" data-active="false" data-motion="stopped" data-locked="false"
-           aria-label="Joystick de control. Flechas del teclado para mover, Espacio para detener.">
-        <span class="joy-mark joy-up" data-dir="up" aria-hidden="true"><i class="bi bi-chevron-up"></i></span>
-        <span class="joy-mark joy-down" data-dir="down" aria-hidden="true"><i class="bi bi-chevron-down"></i></span>
-        <span class="joy-mark joy-left" data-dir="left" aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
-        <span class="joy-mark joy-right" data-dir="right" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-        <span class="joy-center" aria-hidden="true"></span>
-        <span id="joystickKnob" class="joy-knob" aria-hidden="true"></span>
+<div class="top">
+  <div class="logo">RETRO-X<small>IOT COMMAND LINK</small></div>
+  <div class="esp"></div>
+  <div class="ajustes" id="ajustes">
+  <input id="apiBase" class="hud" size="20" title="URL de la API (FastAPI corriendo en tu computadora)" style="display:none">
+  <select id="vehiculo" class="hud" title="Vehículo"></select>
+  <input id="llave" class="hud" type="password" placeholder="X-API-KEY" size="18" autocomplete="off" title="Llave de control">
+  </div>
+  <div class="chip"><div id="senal" class="senal"><i></i><i></i><i></i><i></i></div><span id="enlace">SIN ENLACE</span></div>
+  <div class="chip soloPc">LAT <b id="latencia">— ms</b></div>
+  <div class="chip soloPc"><b id="reloj">--:--:--</b></div>
+  <button class="engrane" id="btnAjustes" title="Ajustes" aria-label="Ajustes">⚙</button>
+</div>
+
+<div class="estado3" role="status" aria-label="Estado de conexiones">
+  <span class="ind warn" id="indWs"><span aria-hidden="true">◌</span>WebSocket WSS: <b>Conectando</b></span>
+  <span class="ind warn" id="indApi"><span aria-hidden="true">◌</span>Servidor AWS · API 21 servicios: <b>Comprobando</b></span>
+  <span class="ind warn" id="indDb"><span aria-hidden="true">?</span>Amazon RDS: <b>Sin verificar</b></span>
+</div>
+<div class="escena">
+  <!-- ======= Arena + control remoto ======= -->
+  <div class="panel principal">
+    <div class="titulo"><span>RADAR TÁCTICO · <b>SIMULACIÓN</b></span><span id="nombreVehiculo">—</span></div>
+    <div class="arena">
+      <div id="escena3d" class="escena3d"></div>
+      <canvas id="radar"></canvas>
+      <div id="cmdGrande" class="cmdGrande">—</div>
+      <div class="hudTL"><span class="etq">POS</span> <span id="hPos">0, 0</span><br><span class="etq">RUMBO</span> <span id="hRumbo">0°</span><br><span class="etq">CABINA</span> <span id="hCabina">0°</span></div>
+      <div class="hudTR"><span class="etq">CÓDIGO</span> <span id="hCodigo">—</span><br><span class="etq">ESTADO RDS</span> <span id="hFecha">—</span><br><span class="etq">ORIGEN</span> <span id="hOrigen">—</span></div>
+      <div class="hudBL"><span class="etq">MOTOR</span> <span id="hMotor">IDLE</span></div>
+      <div class="hudBR"><span class="etq">VEHÍCULO</span> <span id="hConectado">—</span></div>
+      <div class="herr3d">
+        <button id="btnCam" class="btnMini" title="Cambiar cámara (C)">CÁM · ÓRBITA</button>
+        <button id="btnSonido" class="btnMini" title="Sonido (M)">♪ ON</button>
       </div>
-      <p class="direction-readout" aria-live="off">Comando activo: <strong id="directionLabel">Detenido</strong></p>
-      <button id="btnStop" class="btn-stop" type="button" disabled>
-        <i class="bi bi-stop-circle-fill" aria-hidden="true"></i><span>DETENER</span>
-      </button>
-      <p class="hint">Al soltar el joystick se envía DETENER. <kbd>Esc</kbd> también detiene.</p>
-    </section>
+      <div id="autopiloto" class="autopiloto"><span>◆ AUTOPILOTO · DEMO EN CURSO ◆</span></div>
+    </div>
 
-    <!-- Movimientos del catálogo -->
-    <section class="panel panel-actions" aria-labelledby="h-act">
-      <div class="panel-head">
-        <h2 id="h-act" class="panel-title">Movimientos</h2>
-        <div class="form-check form-switch m-0">
-          <input class="form-check-input" type="checkbox" role="switch" id="holdMode" checked>
-          <label class="form-check-label" for="holdMode">Mantener para accionar</label>
+    <div class="remoto">
+      <div id="antena" class="antena"></div>
+      <div class="cuerpo">
+        <div class="stick" id="cajaIzq">
+          <div class="nombre">TRACCIÓN</div>
+          <div class="base" id="stickIzq">
+            <div class="dir n" data-cmd="AVANZAR" data-lbl="▲ AVANZAR"></div><div class="dir s" data-cmd="RETROCEDER" data-lbl="RETROCEDER ▼"></div>
+            <div class="dir o" data-cmd="GIRO_IZQUIERDA" data-lbl="◀ GIRO"></div><div class="dir e" data-cmd="GIRO_DERECHA" data-lbl="GIRO ▶"></div>
+            <div class="perilla"></div>
+          </div>
+        </div>
+
+        <div class="centro">
+          <div class="lcd">
+            <div class="fila"><span>TX</span><span id="lcdTx">LISTO</span></div>
+            <div class="grande" id="lcdCmd">—</div>
+            <div class="fila"><span id="lcdModo">MANUAL</span><span id="lcdHist">HIST 0/10</span></div>
+          </div>
+          <button id="btnStop" class="botonStop" title="DETENER (P / Espacio)">STOP</button>
+          <div class="interruptores">
+            <label class="switch" title="Al soltar el joystick o la tecla se envía DETENER"><input type="checkbox" id="freno" checked><span class="riel"></span>FRENO AL SOLTAR</label>
+          </div>
+        </div>
+
+        <div class="stick" id="cajaDer">
+          <div class="nombre">CABINA · PALA</div>
+          <div class="base" id="stickDer">
+            <div class="dir n" data-cmd="PALA_ARRIBA" data-lbl="▲ PALA"></div><div class="dir s" data-cmd="PALA_ABAJO" data-lbl="PALA ▼"></div>
+            <div class="dir o" data-cmd="ROTACION_IZQUIERDA" data-lbl="◀ CABINA"></div><div class="dir e" data-cmd="ROTACION_DERECHA" data-lbl="CABINA ▶"></div>
+            <div class="perilla"></div>
+          </div>
         </div>
       </div>
-      <div id="actionsGrid" class="actions-grid" aria-live="off">
-        <p class="text-secondary small mb-0">Esperando el catálogo de la API…</p>
+      <div class="aux" id="aux"></div>
+    </div>
+  </div>
+
+  <!-- ======= Panel lateral (en teléfono: pestañas) ======= -->
+  <div class="lado">
+    <nav class="pestanas" id="pestanas">
+      <button data-tab="demo" class="activa">DEMO</button><button data-tab="bita">BITÁCORA</button>
+      <button data-tab="tele">TELEMETRÍA</button><button data-tab="ws">ENLACE</button>
+    </nav>
+    <div class="panel" data-tab="tele">
+      <div class="titulo"><span>TELEMETRÍA</span><b id="tVehiculo">—</b></div>
+      <div class="telemetria">
+        <div class="medidor"><small>COMANDO ACTUAL</small><b id="tCmd">—</b></div>
+        <div class="medidor"><small>ENLACE VEHÍCULO</small><b id="tConectado">—</b></div>
+        <div class="medidor"><small>VELOCIDAD SIM</small><b id="tVel">0 u/s</b></div>
+        <div class="medidor"><small>PALA</small><b id="tPala">0%</b><div class="barraPala"><div id="tPalaBarra"></div></div></div>
       </div>
-    </section>
+    </div>
 
-    <!-- DEMO -->
-    <section class="panel panel-demo" aria-labelledby="h-demo">
-      <h2 id="h-demo" class="panel-title">DEMO</h2>
-      <label class="visually-hidden" for="demoSelect">Elegir DEMO</label>
-      <select id="demoSelect" class="form-select form-select-dark" disabled><option>Cargando…</option></select>
-      <div class="demo-actions">
-        <button id="btnDemoStart" class="btn btn-accent" type="button" disabled><i class="bi bi-play-fill" aria-hidden="true"></i> Iniciar</button>
-        <button id="btnDemoCancel" class="btn btn-outline-light" type="button" disabled><i class="bi bi-x-octagon" aria-hidden="true"></i> Cancelar</button>
-      </div>
-      <p id="demoStatus" class="demo-status" data-state="idle">Sin DEMO en ejecución</p>
-      <div class="progress demo-progress" role="progressbar" aria-label="Avance de la DEMO" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-        <div id="demoProgress" class="progress-bar"></div>
-      </div>
-      <p class="hint">Solo se consultan, inician y cancelan. Crear o editar DEMO es del módulo de Administración.</p>
-    </section>
+    <div class="panel activo" data-tab="demo">
+      <div class="titulo"><span>SECUENCIAS AUTÓNOMAS · <b>DEMO</b></span></div>
+      <div class="demos" id="demos"></div>
+    </div>
 
-    <!-- Seguimiento: solicitado → aceptado → evento -->
-    <section class="panel panel-feedback" aria-labelledby="h-fb">
-      <h2 id="h-fb" class="panel-title">Última acción</h2>
-      <p class="last-line"><strong id="lastCommand">—</strong> <span class="text-secondary">· último estado reportado: <span id="lastState">—</span></span></p>
-      <ol id="phases" class="phases">
-        <li data-step="1" data-done="false"><i class="bi bi-send" aria-hidden="true"></i><span>Solicitado</span></li>
-        <li data-step="2" data-done="false" data-error="false"><i class="bi bi-cloud-check" aria-hidden="true"></i><span>Aceptado por la API</span></li>
-        <li data-step="3" data-done="false"><i class="bi bi-broadcast" aria-hidden="true"></i><span>Evento WebSocket</span></li>
-      </ol>
-      <p id="lastDetail" class="hint">Aún no hay acciones.</p>
-      <p class="hint note"><i class="bi bi-info-circle" aria-hidden="true"></i> «Aceptado» y «evento» no confirman que el vehículo físico se haya movido: en esta etapa no hay microcontrolador conectado.</p>
-    </section>
+    <div class="panel" data-tab="bita">
+      <div class="titulo"><span>BITÁCORA · <b>ÚLTIMOS 10</b></span><span>INDIVIDUALES</span></div>
+      <ul class="lista" id="historial"></ul>
+    </div>
 
-    <section class="panel panel-log" aria-labelledby="h-log">
-      <details open>
-        <summary id="h-log" class="panel-title">Bitácora</summary>
-        <ol id="logList" class="log-list" role="log" aria-live="off"></ol>
-      </details>
-    </section>
-  </main>
+    <div class="panel" data-tab="ws">
+      <div class="titulo"><span>ENLACE WEBSOCKET</span><b id="wsUrl">—</b></div>
+      <div class="terminal" id="terminal"></div>
+    </div>
+  </div>
+</div>
+<footer class="pie">Desarrollado por Juan Elpidio López García · 2026</footer>
+<div id="toast" class="toast"></div>
 
-  <footer class="app-footer"><small id="credits">Desarrollado por Juan Elpidio López García · 2026</small></footer>
+<script>
+/* ================== utilidades ================== */
+const $ = id => document.getElementById(id);
+// Servida por la propia API (/control) usa el mismo origen; publicada (GitHub Pages) apunta a la API pública en EC2 (HTTPS/WSS).
+const DESDE_API = location.pathname.startsWith("/control");
+const API_BASE = DESDE_API ? location.origin
+  : (new URLSearchParams(location.search).get("api") || localStorage.getItem("iot_api_base") || "https://100-63-187-92.sslip.io").replace(/\/+$/, "");
+const WS_URL = id => `${API_BASE.replace(/^http/, "ws")}/ws/vehiculos/${id}`;
+if (!DESDE_API) {
+  const campo = document.getElementById("apiBase");
+  campo.style.display = ""; campo.value = API_BASE;
+  campo.addEventListener("change", e => { localStorage.setItem("iot_api_base", e.target.value.trim()); location.reload(); });
+}
+const norm = s => (s || "").toUpperCase().replace(/\s+/g, "_");
+let vehiculo = null, ws = null, reintento = null, comandos = [], porNombre = {}, demoActiva = null;
 
-  <div id="toasts" class="toasts" aria-live="polite"></div>
-  <div id="srStatus" class="visually-hidden" role="status" aria-live="polite"></div>
+$("llave").value = localStorage.getItem("iot_api_key") || "";
+$("llave").addEventListener("change", e => localStorage.setItem("iot_api_key", e.target.value.trim()));
+setInterval(() => $("reloj").textContent = new Date().toLocaleTimeString("es-MX", { hour12: false }), 500);
 
-  <dialog id="keyDialog" class="key-dialog" aria-labelledby="keyTitle">
-    <form id="keyForm" method="dialog" autocomplete="off">
-      <h2 id="keyTitle" class="h5">Llave de acceso</h2>
-      <p class="small text-secondary">La API exige <code>X-API-Key</code> para mover el vehículo y controlar las DEMO. No se guarda en el código ni en GitHub.</p>
-      <label for="keyInput" class="form-label">X-API-Key</label>
-      <input id="keyInput" class="form-control form-control-dark" type="password" autocomplete="off" spellcheck="false" required>
-      <div class="form-check my-3">
-        <input class="form-check-input" type="checkbox" id="keyRemember">
-        <label class="form-check-label small" for="keyRemember">Recordar en este dispositivo</label>
-      </div>
-      <div class="d-flex gap-2 justify-content-end flex-wrap">
-        <button id="keyClear" type="button" class="btn btn-outline-danger btn-sm">Quitar llave</button>
-        <button id="keyCancel" type="button" class="btn btn-outline-light btn-sm">Cancelar</button>
-        <button type="submit" class="btn btn-accent btn-sm">Guardar</button>
-      </div>
-    </form>
-  </dialog>
+function toast(texto, ok = false) {
+  if (!ok) dispatchEvent(new CustomEvent("retro:error"));
+  const t = $("toast"); t.textContent = texto; t.className = "toast ver" + (ok ? " ok" : "");
+  clearTimeout(t._t); t._t = setTimeout(() => t.className = "toast" + (ok ? " ok" : ""), 3200);
+}
+function term(texto, clase = "") {
+  const d = document.createElement("div"); d.className = clase;
+  d.textContent = `[${new Date().toLocaleTimeString("es-MX", { hour12: false })}] ${texto}`;
+  $("terminal").prepend(d);
+  while ($("terminal").children.length > 150) $("terminal").lastChild.remove();
+}
+async function api(ruta, op = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (op.llave) headers["X-API-Key"] = $("llave").value.trim();
+  const r = await fetch(API_BASE + ruta, { method: op.method || "GET", headers, body: op.body ? JSON.stringify(op.body) : undefined });
+  const d = await r.json().catch(() => null);
+  if (!r.ok) {
+    const det = d && d.detail;
+    throw new Error(typeof det === "string" ? det : det ? det.map(x => x.msg).join("; ") : `HTTP ${r.status}`);
+  }
+  return d;
+}
 
-  <noscript><p class="p-3">Esta aplicación necesita JavaScript.</p></noscript>
-  <script type="module" src="js/main.js"></script>
+/* ================== simulación (radar) ================== */
+const cv = $("radar"), cx = cv.getContext("2d");
+const sim = { x: 0, y: 0, rumbo: -90, cabina: 0, pala: 0.35, cmd: "DETENER", hasta: 0, rastro: [], activo: "DETENER", v: 0 };
+window.SIM = sim;                // la escena 3D lee este mismo estado
+const MUNDO = 170;               // radio del área de trabajo simulada (unidades)
+const emitir = (tipo, detalle) => dispatchEvent(new CustomEvent("retro:" + tipo, { detail: detalle }));
+const FISICA = {   // efecto visual de cada comando en la simulación (no es telemetría real)
+  AVANZAR: { v: 70 }, RETROCEDER: { v: -45 }, GIRO_IZQUIERDA: { giro: -75, v: 12 }, GIRO_DERECHA: { giro: 75, v: 12 },
+  ROTACION_IZQUIERDA: { cab: -90 }, ROTACION_DERECHA: { cab: 90 }, PALA_ARRIBA: { pala: 0.55 }, PALA_ABAJO: { pala: -0.55 },
+};
+function aplicarComando(nombre, durMs = 0) {
+  sim.cmd = norm(nombre); sim.hasta = durMs ? performance.now() + durMs : 0;
+}
+function ajustarCanvas() {
+  const r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  cv.width = r.width * dpr; cv.height = r.height * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener("resize", ajustarCanvas);
+
+let ultimo = performance.now(), barrido = 0;
+function cuadro(t) {
+  const dt = Math.min(0.05, (t - ultimo) / 1000); ultimo = t;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  // física
+  let cmd = sim.cmd;
+  if (sim.hasta && t > sim.hasta) cmd = "DETENER";   // en DEMO: terminó la duración, ahora es pausa
+  const f = FISICA[cmd] || {};
+  sim.rumbo += (f.giro || 0) * dt;
+  sim.cabina = Math.max(-170, Math.min(170, sim.cabina + (f.cab || 0) * dt));
+  sim.pala = Math.max(0, Math.min(1, sim.pala + (f.pala || 0) * dt));
+  const v = f.v || 0, rad = sim.rumbo * Math.PI / 180;
+  sim.x += Math.cos(rad) * v * dt; sim.y += Math.sin(rad) * v * dt;
+  const d = Math.hypot(sim.x, sim.y);           // el área es un círculo: al salir, reaparece del lado contrario
+  if (d > MUNDO) { sim.x = -sim.x * (MUNDO - 4) / d; sim.y = -sim.y * (MUNDO - 4) / d; sim.rastro = []; emitir("salto"); }
+  if (v) { sim.rastro.push([sim.x, sim.y]); if (sim.rastro.length > 260) sim.rastro.shift(); }
+  sim.activo = cmd; sim.v = v; sim.giro = f.giro || 0; sim.cabVel = f.cab || 0; sim.palaVel = f.pala || 0;
+  const lim = Math.min(W, H) * 0.42, k = lim / MUNDO;   // escala del dibujo (radar grande o minimapa)
+
+  // dibujo
+  cx.clearRect(0, 0, W, H);
+  const ox = W / 2, oy = H / 2 + (W > 300 ? 8 : 0), R = lim + (W > 300 ? 26 : 6);
+  const g = cx.createRadialGradient(ox, oy, 0, ox, oy, R);
+  g.addColorStop(0, "rgba(0,240,255,.07)"); g.addColorStop(1, "rgba(0,240,255,0)");
+  cx.fillStyle = g; cx.beginPath(); cx.arc(ox, oy, R, 0, 7); cx.fill();
+  cx.strokeStyle = "rgba(0,240,255,.14)"; cx.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) { cx.beginPath(); cx.arc(ox, oy, R * i / 4, 0, 7); cx.stroke(); }
+  for (let a = 0; a < 360; a += 30) {
+    const r2 = a * Math.PI / 180; cx.beginPath(); cx.moveTo(ox, oy); cx.lineTo(ox + Math.cos(r2) * R, oy + Math.sin(r2) * R); cx.stroke();
+  }
+  barrido = (barrido + dt * 1.6) % (Math.PI * 2);
+  const sw = cx.createConicGradient ? cx.createConicGradient(barrido - 0.6, ox, oy) : null;
+  if (sw) {
+    sw.addColorStop(0, "rgba(0,240,255,0)"); sw.addColorStop(0.09, "rgba(0,240,255,.16)"); sw.addColorStop(0.1, "rgba(0,240,255,0)");
+    cx.fillStyle = sw; cx.beginPath(); cx.arc(ox, oy, R, 0, 7); cx.fill();
+  }
+  // rastro
+  cx.lineCap = "round";
+  for (let i = 1; i < sim.rastro.length; i++) {
+    const [x1, y1] = sim.rastro[i - 1], [x2, y2] = sim.rastro[i];
+    cx.strokeStyle = `rgba(255,43,214,${(i / sim.rastro.length) * 0.7})`; cx.lineWidth = Math.max(1.5, 3 * k);
+    cx.beginPath(); cx.moveTo(ox + x1 * k, oy + y1 * k); cx.lineTo(ox + x2 * k, oy + y2 * k); cx.stroke();
+  }
+  dibujarRetro(ox + sim.x * k, oy + sim.y * k, cmd, t, Math.max(k, 0.42));
+
+  // HUD
+  $("hPos").textContent = `${sim.x.toFixed(0)}, ${(-sim.y).toFixed(0)}`;
+  $("hRumbo").textContent = `${(((sim.rumbo + 90) % 360) + 360) % 360 | 0}°`;
+  $("hCabina").textContent = `${sim.cabina | 0}°`;
+  $("hMotor").textContent = v || f.giro ? "TRACCIÓN" : f.cab ? "GIRO CABINA" : f.pala ? "HIDRÁULICO" : "IDLE";
+  $("tVel").textContent = `${Math.abs(v)} u/s`;
+  $("tPala").textContent = `${Math.round(sim.pala * 100)}%`;
+  $("tPalaBarra").style.width = `${sim.pala * 100}%`;
+  requestAnimationFrame(cuadro);
+}
+function dibujarRetro(x, y, cmd, t, escala = 1) {
+  const brillo = cmd !== "DETENER";
+  cx.save(); cx.translate(x, y); cx.scale(escala, escala); cx.rotate((sim.rumbo + 90) * Math.PI / 180);
+  cx.shadowColor = brillo ? "#00f0ff" : "#ff3355"; cx.shadowBlur = 18;
+  // orugas
+  const fase = (t / 60) % 8;
+  for (const lado of [-1, 1]) {
+    cx.fillStyle = "#0b1a2a"; cx.strokeStyle = "#00f0ff"; cx.lineWidth = 1.5;
+    redondo(lado * 17 - 6, -24, 12, 48, 5); cx.fill(); cx.stroke();
+    cx.strokeStyle = "rgba(0,240,255,.5)"; cx.lineWidth = 1;
+    for (let k = -24 + (FISICA[cmd]?.v ? fase : 0); k < 24; k += 8) { cx.beginPath(); cx.moveTo(lado * 17 - 6, k); cx.lineTo(lado * 17 + 6, k); cx.stroke(); }
+  }
+  // chasis
+  cx.fillStyle = "#101d33"; cx.strokeStyle = "#7ff8ff"; cx.lineWidth = 1.5; redondo(-12, -18, 24, 36, 4); cx.fill(); cx.stroke();
+  // cabina + brazo (giran con la cabina)
+  cx.rotate(sim.cabina * Math.PI / 180);
+  const largo = 26 + sim.pala * 30;
+  cx.strokeStyle = "#ffb627"; cx.shadowColor = "#ffb627"; cx.lineWidth = 6;
+  cx.beginPath(); cx.moveTo(0, -6); cx.lineTo(0, -6 - largo); cx.stroke();
+  cx.fillStyle = "#ffb627"; cx.beginPath(); cx.moveTo(-9, -6 - largo); cx.lineTo(9, -6 - largo); cx.lineTo(6, -14 - largo); cx.lineTo(-6, -14 - largo); cx.closePath(); cx.fill();
+  cx.shadowColor = "#ff2bd6"; cx.fillStyle = "#1a2440"; cx.strokeStyle = "#ff2bd6"; cx.lineWidth = 2;
+  redondo(-10, -10, 20, 20, 5); cx.fill(); cx.stroke();
+  cx.fillStyle = "rgba(0,240,255,.8)"; redondo(-6, -8, 12, 5, 2); cx.fill();
+  cx.restore();
+}
+function redondo(x, y, w, h, r) {
+  cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r);
+  cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath();
+}
+
+/* ================== teléfono: ajustes, pestañas y vibración ================== */
+$("btnAjustes").onclick = () => document.querySelector(".top").classList.toggle("abierto");
+document.querySelectorAll("#pestanas button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#pestanas button").forEach(x => x.classList.toggle("activa", x === b));
+  document.querySelectorAll(".lado>.panel").forEach(p => p.classList.toggle("activo", p.dataset.tab === b.dataset.tab));
+});
+const vibrar = patron => { try { navigator.vibrate && navigator.vibrate(patron); } catch (e) {} };
+addEventListener("orientationchange", () => setTimeout(ajustarCanvas, 250));
+
+
+/* ================== secuencia de arranque (chequeos reales) ================== */
+const esperar = ms => new Promise(r => setTimeout(r, ms));
+async function hasta(condicion, ms) {
+  const fin = performance.now() + ms;
+  while (performance.now() < fin) { if (condicion()) return true; await esperar(120); }
+  return condicion();
+}
+async function secuenciaArranque() {
+  const caja = $("arranque"), lineas = $("arrLineas"), barra = $("arrBarra"), boton = $("arrBoton");
+  const cerrar = () => {
+    if ($("arrSesion").checked) sessionStorage.setItem("retro_boot", "1");
+    caja.classList.add("fuera"); emitir("arrancar");
+  };
+  boton.onclick = cerrar;
+  if (sessionStorage.getItem("retro_boot")) { caja.classList.add("fuera"); return; }
+  const pasos = 6; let hechos = 0;
+  async function paso(texto, prueba, ok = "OK", mal = "FALLA") {
+    const d = document.createElement("div"); d.innerHTML = `<span></span><b>···</b>`;
+    d.querySelector("span").textContent = texto; lineas.append(d);
+    let r; try { r = await prueba(); } catch (e) { r = false; }
+    const etiqueta = typeof r === "string" ? r : r ? ok : mal;
+    d.className = r === "esp" ? "esp" : r ? "ok" : "mal"; d.querySelector("b").textContent = r === "esp" ? ok : etiqueta;
+    barra.style.width = `${(++hechos / pasos) * 100}%`;
+    return r;
+  }
+  await paso("NÚCLEO RETRO-X", async () => { await esperar(350); return true; }, "EN LÍNEA");
+  await paso(`API ▸ ${API_BASE.replace(/^https?:\/\//, "")}`, async () => (await fetch(API_BASE + "/salud")).ok, "OK", "SIN RESPUESTA");
+  await paso("AMAZON RDS ▸ vehiculo_iot", async () => (await hasta(() => $("vehiculo").options.length > 0, 9000))
+    ? `${$("vehiculo").options.length} VEHÍCULO(S)` : false, "OK", "SIN DATOS");
+  await paso("CANAL WEBSOCKET", () => hasta(() => $("enlace").textContent === "ENLACE OK", 9000), "ENLAZADO", "SIN ENLACE");
+  await paso("MOTOR GRÁFICO 3D", async () => (await hasta(() => window.RETRO3D !== undefined, 8000)) && window.RETRO3D
+    ? "WEBGL OK" : "esp", "MODO 2D");
+  await paso("SÍNTESIS DE AUDIO", async () => (window.AudioContext || window.webkitAudioContext) ? "esp" : false, "LISTA", "NO DISPONIBLE");
+  boton.textContent = "▶ ARRANCAR MOTOR"; boton.classList.add("listo");
+}
+
+/* ================== envío de comandos (el último gana) ================== */
+let enVuelo = false, pendiente = null;
+function enviar(nombre) {
+  const c = porNombre[norm(nombre)];
+  if (!c || !c.activo || demoActiva) return;
+  vibrar(norm(c.nombre) === "DETENER" ? [35, 40, 35] : 18); emitir("tx", norm(c.nombre));
+  pendiente = c; $("lcdTx").textContent = "COLA"; bombear();
+}
+async function bombear() {
+  if (enVuelo || !pendiente) return;
+  const c = pendiente; pendiente = null; enVuelo = true;
+  $("antena").classList.add("tx"); $("lcdTx").textContent = "TX ▸ " + c.nombre.replaceAll("_", " ").slice(0, 12);
+  const t0 = performance.now();
+  try {
+    await api("/movimientos", { method: "POST", llave: true, body: { id_vehiculo: vehiculo, id_comando: c.id_comando, origen: "WEB" } });
+    $("latencia").textContent = `${Math.round(performance.now() - t0)} ms`;
+    $("lcdTx").textContent = "ACK ✓";
+  } catch (e) { $("lcdTx").textContent = "ERR"; toast(e.message); term("ERROR " + e.message, "err"); }
+  finally { enVuelo = false; $("antena").classList.remove("tx"); bombear(); }
+}
+
+/* ================== joysticks ================== */
+function joystick(base) {
+  const perilla = base.querySelector(".perilla"), dirs = [...base.querySelectorAll(".dir")];
+  let activo = null, origen = null;
+  const mapa = { n: dirs.find(d => d.classList.contains("n")), s: dirs.find(d => d.classList.contains("s")),
+                 o: dirs.find(d => d.classList.contains("o")), e: dirs.find(d => d.classList.contains("e")) };
+  function mover(ev) {
+    const r = base.getBoundingClientRect(), radio = r.width / 2 - 38;
+    let dx = ev.clientX - (r.left + r.width / 2), dy = ev.clientY - (r.top + r.height / 2);
+    const m = Math.hypot(dx, dy); if (m > radio) { dx *= radio / m; dy *= radio / m; }
+    perilla.style.transform = `translate(${dx}px,${dy}px)`;
+    let dir = null;
+    if (Math.hypot(dx, dy) > radio * 0.45) dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "e" : "o") : (dy > 0 ? "s" : "n");
+    const el = dir && mapa[dir];
+    const cmd = el && !el.classList.contains("off") ? el.dataset.cmd : null;
+    if (cmd !== activo) { activo = cmd; if (cmd) enviar(cmd); }
+  }
+  base.addEventListener("pointerdown", ev => { base.setPointerCapture(ev.pointerId); base.classList.add("arrastrando"); origen = ev.pointerId; mover(ev); });
+  base.addEventListener("pointermove", ev => { if (origen === ev.pointerId) mover(ev); });
+  const soltar = ev => {
+    if (origen !== ev.pointerId) return;
+    origen = null; base.classList.remove("arrastrando"); perilla.style.transform = "";
+    if (activo && $("freno").checked) enviar("DETENER");
+    activo = null;
+  };
+  base.addEventListener("pointerup", soltar); base.addEventListener("pointercancel", soltar);
+}
+joystick($("stickIzq")); joystick($("stickDer"));
+$("btnStop").onclick = () => enviar("DETENER");
+
+/* ================== teclado ================== */
+const tecla = c => ((c.descripcion || "").match(/tecla\s+([A-Za-z0-9])/i) || [])[1]?.toUpperCase();
+const presionadas = new Set();
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.ctrlKey || e.altKey || e.metaKey) return;
+  const k = e.key === " " ? "DETENER" : e.key.toUpperCase();
+  const c = k === "DETENER" ? porNombre.DETENER : comandos.find(x => x.activo && tecla(x) === k);
+  if (!c) return;
+  e.preventDefault(); if (e.repeat || presionadas.has(c.nombre)) return;
+  presionadas.add(c.nombre); enviar(c.nombre);
+  if (norm(c.nombre) === "DETENER") { $("btnStop").classList.add("pulsado"); setTimeout(() => $("btnStop").classList.remove("pulsado"), 150); }
+});
+addEventListener("keyup", e => {
+  const c = comandos.find(x => tecla(x) === e.key.toUpperCase());
+  if (!c || !presionadas.delete(c.nombre)) return;
+  if ($("freno").checked && norm(c.nombre) !== "DETENER" && !presionadas.size) enviar("DETENER");
+});
+
+/* ================== pintado ================== */
+function prepararControles() {
+  porNombre = Object.fromEntries(comandos.map(c => [norm(c.nombre), c]));
+  document.querySelectorAll(".dir").forEach(d => {
+    const c = porNombre[d.dataset.cmd];
+    d.classList.toggle("off", !c || !c.activo);
+    // PC: tecla + etiqueta; teléfono (sin teclado): flecha grande + palabra corta
+    const flecha = (d.dataset.lbl.match(/[▲▼◀▶]/) || [""])[0], palabra = d.dataset.lbl.replace(flecha, "").trim();
+    d.innerHTML = c ? `${tecla(c) ? `<kbd>${tecla(c)}</kbd>` : ""}<span class="pal">${d.dataset.lbl}</span>`
+      + `<span class="movil"><i>${flecha}</i>${palabra}</span>` : "—";
+  });
+  $("btnStop").disabled = !porNombre.DETENER;
+  const mapeados = new Set([...document.querySelectorAll(".dir")].map(d => d.dataset.cmd).concat("DETENER"));
+  $("aux").innerHTML = "";
+  comandos.filter(c => c.activo && !mapeados.has(norm(c.nombre))).forEach(c => {
+    const b = document.createElement("button"); b.className = "btnHud"; b.textContent = c.nombre.replaceAll("_", " ");
+    b.title = c.descripcion || ""; b.onclick = () => enviar(c.nombre); $("aux").append(b);
+  });
+}
+function pintarEstado(e, origen) {
+  const cmd = e && e.comando ? e.comando : "SIN ESTADO";
+  $("cmdGrande").textContent = cmd.replaceAll("_", " ");
+  $("cmdGrande").classList.toggle("alto", norm(cmd) === "DETENER");
+  $("lcdCmd").textContent = cmd.replaceAll("_", " ");
+  $("tCmd").textContent = cmd.replaceAll("_", " ");
+  $("hCodigo").textContent = e && e.codigo != null ? e.codigo : "—";
+  if (e && e.fecha_actualizacion) $("hFecha").textContent = e.fecha_actualizacion.replace("T", " ").slice(11, 19) + " UTC";
+  if (origen) $("hOrigen").textContent = origen;
+  if (e && "conectado" in e) {
+    const txt = e.conectado ? "EN LÍNEA" : "FUERA DE LÍNEA";
+    $("hConectado").textContent = txt; $("tConectado").textContent = txt;
+    $("tConectado").style.color = e.conectado ? "var(--verde)" : "var(--rojo)";
+  }
+  document.querySelectorAll(".dir").forEach(d => d.classList.toggle("activa", e && d.dataset.cmd === norm(e.comando)));
+}
+async function cargarHistorial(marcarNuevo = false) {
+  const h = await api(`/vehiculos/${vehiculo}/historial`);
+  $("lcdHist").textContent = `HIST ${h.length}/10`;
+  $("historial").innerHTML = h.length ? "" : `<li style="display:block;color:var(--tenue)">Sin movimientos todavía</li>`;
+  h.forEach((r, i) => {
+    const li = document.createElement("li"); if (marcarNuevo && i === 0) li.className = "nuevo";
+    li.innerHTML = `<span class="id">#${r.id_historial}</span><b></b><span class="org"></span><span class="hora"></span>`;
+    li.querySelector("b").textContent = (r.comando || "—").replaceAll("_", " ");
+    li.querySelector(".org").textContent = r.origen;
+    li.querySelector(".hora").textContent = (r.fecha_hora || "").replace("T", " ") + " UTC";
+    $("historial").append(li);
+  });
+}
+async function cargarDemos() {
+  const demos = await api(`/vehiculos/${vehiculo}/demos`);
+  $("demos").innerHTML = demos.length ? "" : `<small style="color:var(--tenue)">Este vehículo no tiene DEMO registradas.</small>`;
+  for (const d of demos) {
+    const movs = await api(`/vehiculos/${vehiculo}/demos/${d.id_demo}/movimientos`);
+    const seg = movs.reduce((s, m) => s + m.duracion_ms + m.pausa_ms, 0) / 1000;
+    const div = document.createElement("div"); div.className = "cartucho"; div.dataset.demo = d.id_demo;
+    div.innerHTML = `<div class="anillo"><span>${movs.length}</span></div><div class="info"><b></b><small>${movs.length} movimientos · ${seg.toFixed(1)} s${d.activo ? "" : " · INACTIVA"}</small></div>`;
+    div.querySelector("b").textContent = d.nombre.toUpperCase();
+    const b = document.createElement("button"); b.className = "btnHud magenta"; b.textContent = "LANZAR";
+    b.disabled = !d.activo || !movs.length || !!demoActiva;
+    b.onclick = async () => {
+      if (demoActiva) {
+        try { await api(`/vehiculos/${vehiculo}/demos/cancelar`, { method: "POST", llave: true }); } catch (e) { toast(e.message); }
+        return;
+      }
+      try { await api(`/vehiculos/${vehiculo}/demos/${d.id_demo}/iniciar`, { method: "POST", llave: true }); } catch (e) { toast(e.message); }
+    };
+    div.append(b); $("demos").append(div);
+  }
+}
+function modoDemo(id, orden = 0, total = 0) {
+  demoActiva = id;
+  $("autopiloto").classList.toggle("on", !!id);
+  $("lcdModo").textContent = id ? `AUTO ${orden}/${total}` : "MANUAL";
+  ["stickIzq", "stickDer"].forEach(s => $(s).classList.toggle("bloq", !!id));
+  $("btnStop").disabled = !!id || !porNombre.DETENER;
+  document.querySelectorAll(".aux .btnHud").forEach(b => b.disabled = !!id);
+  document.querySelectorAll(".cartucho").forEach(c => {
+    const btn = c.querySelector("button"), esta = id && +c.dataset.demo === id;
+    btn.disabled = id ? !esta : false;
+    btn.textContent = esta ? "ABORTAR" : "LANZAR"; btn.className = "btnHud " + (esta ? "rojo" : "magenta");
+    c.querySelector(".anillo").style.setProperty("--p", esta && total ? 100 * orden / total : 0);
+    c.querySelector(".anillo span").textContent = esta && total ? `${orden}/${total}` : c.querySelector("small").textContent.split(" ")[0];
+  });
+}
+
+/* ================== WebSocket ================== */
+function indicador(id, clase, icono, nombre, texto) {
+  const e = $(id); e.className = "ind " + clase;
+  e.replaceChildren(Object.assign(document.createElement("span"), { textContent: icono, ariaHidden: "true" }), document.createTextNode(nombre + ": "), Object.assign(document.createElement("b"), { textContent: texto }));
+}
+// API: GET /salud (solo prueba que el servicio de salud responde; no las 21 operaciones). RDS: el backend no expone diagnóstico → «Sin verificar».
+async function vigilarApi() {
+  if (document.hidden) return;
+  const c = new AbortController(), t = setTimeout(() => c.abort(), 5000);
+  try {
+    const r = await fetch(API_BASE + "/salud", { signal: c.signal, cache: "no-store" });
+    const ok = r.ok && (await r.json()).estado === "ok";
+    indicador("indApi", ok ? "ok" : "mal", ok ? "✔" : "✖", "Servidor AWS · API 21 servicios", ok ? "Disponible" : "No disponible");
+  } catch { indicador("indApi", "mal", "✖", "Servidor AWS · API 21 servicios", "No disponible"); }
+  finally { clearTimeout(t); }
+}
+setInterval(vigilarApi, 15000); vigilarApi();
+window.addEventListener("offline", () => indicador("indWs", "mal", "✖", "WebSocket WSS", "Desconectado"));
+function conectarWS() {
+  clearTimeout(reintento);
+  if (ws) { ws.onclose = null; ws.close(); }
+  const id = vehiculo; ws = new WebSocket(WS_URL(id));
+  $("wsUrl").textContent = `/ws/vehiculos/${id}`;
+  ws.onopen = () => { $("senal").classList.add("on"); $("enlace").textContent = "ENLACE OK"; indicador("indWs","ok","✔","WebSocket WSS","En línea"); };
+  ws.onclose = () => {
+    $("senal").classList.remove("on"); $("enlace").textContent = "RECONECTANDO"; indicador("indWs","warn","↻","WebSocket WSS","Reconectando");
+    if (id === vehiculo) reintento = setTimeout(conectarWS, 2000);
+  };
+  ws.onmessage = ev => manejar(JSON.parse(ev.data));
+  ws.onerror = () => indicador("indWs","mal","✖","WebSocket WSS","Desconectado");
+}
+function manejar(m) {
+  switch (m.tipo) {
+    case "estado_inicial":
+      pintarEstado(m.estado); if (m.estado) aplicarComando(m.estado.comando);
+      term("Enlace establecido · estado inicial recibido", "ok");
+      if (m.demo_en_ejecucion) modoDemo(m.demo_en_ejecucion);
+      break;
+    case "movimiento":
+      pintarEstado({ comando: m.comando, codigo: m.codigo, fecha_actualizacion: m.timestamp }, m.origen);
+      aplicarComando(m.comando);
+      term(`MOV ▸ ${m.comando} (${m.codigo}) · ${m.origen}`, "mov");
+      cargarHistorial(true);
+      break;
+    case "conexion":
+      pintarEstado({ comando: $("tCmd").textContent, conectado: m.conectado }); term(`Vehículo ${m.conectado ? "en línea" : "fuera de línea"}`, "ok");
+      break;
+    case "demo_inicio":
+      emitir("demo"); modoDemo(m.id_demo, 0, m.total_movimientos); term(`DEMO ${m.id_demo} ▸ inicio · ${m.total_movimientos} movimientos`, "demo");
+      break;
+    case "demo_movimiento":
+      modoDemo(m.id_demo, m.orden, m.total_movimientos);
+      pintarEstado({ comando: m.comando, codigo: m.codigo, fecha_actualizacion: m.timestamp }, "DEMO");
+      aplicarComando(m.comando, m.duracion_ms);
+      term(`  ${m.orden}/${m.total_movimientos} ${m.comando} · ${m.duracion_ms} ms + ${m.pausa_ms} ms`, "demo");
+      break;
+    case "demo_fin":
+      emitir("demofin"); term(`DEMO ${m.id_demo} ▸ completada · historial intacto`, "ok"); modoDemo(null); aplicarComando("DETENER"); toast("DEMO COMPLETADA", true);
+      break;
+    case "demo_cancelada":
+      emitir("error"); term(`DEMO ${m.id_demo} ▸ ABORTADA${m.estado_detenido ? " · estado DETENER" : ""}`, "err"); modoDemo(null); aplicarComando("DETENER");
+      refrescarEstado();
+      break;
+    case "demo_error": case "error":
+      term("ERROR " + m.detalle, "err"); modoDemo(null); toast(m.detalle);
+      break;
+  }
+}
+async function refrescarEstado() { const e = await api(`/vehiculos/${vehiculo}/estado`); pintarEstado(e); if (e) aplicarComando(e.comando); }
+
+/* ================== arranque ================== */
+async function elegirVehiculo(id) {
+  vehiculo = +id; localStorage.setItem("iot_vehiculo", id);
+  $("terminal").innerHTML = ""; sim.x = sim.y = 0; sim.rastro = [];
+  try {
+    const v = await api(`/vehiculos/${vehiculo}`);
+    $("nombreVehiculo").textContent = v.nombre.toUpperCase(); $("tVehiculo").textContent = (v.microcontrolador || "").toUpperCase();
+    comandos = v.comandos; prepararControles(); pintarEstado(v.estado); if (v.estado) aplicarComando(v.estado.comando);
+    demoActiva = null;
+    conectarWS();  // primero el enlace; las DEMO y el historial se cargan mientras tanto
+    await Promise.all([cargarHistorial(), cargarDemos()]);
+    modoDemo(demoActiva || v.demo_en_ejecucion || null);
+  } catch (e) { toast(e.message); }
+}
+(async () => {
+  ajustarCanvas(); requestAnimationFrame(cuadro); secuenciaArranque();
+  try {
+    const vs = await api("/vehiculos");
+    vs.forEach(v => $("vehiculo").add(new Option(`#${v.id_vehiculo} ${v.nombre.toUpperCase()}${v.activo ? "" : " (OFF)"}`, v.id_vehiculo)));
+    const g = localStorage.getItem("iot_vehiculo");
+    if (g && vs.some(v => v.id_vehiculo == g)) $("vehiculo").value = g;
+    $("vehiculo").onchange = e => elegirVehiculo(e.target.value);
+    if (vs.length) await elegirVehiculo($("vehiculo").value);
+    if (!$("llave").value) { toast("INGRESA TU X-API-KEY PARA ARMAR EL CONTROL", true); document.querySelector(".top").classList.add("abierto"); }
+  } catch (e) {
+    toast(DESDE_API ? "SIN CONEXIÓN CON LA API: " + e.message : `NO RESPONDE LA API EN ${API_BASE} · LEVANTA UVICORN EN TU COMPU`);
+    term(`Sin conexión con ${API_BASE}: ${e.message}`, "err");
+  }
+})();
+</script>
+<script>
+/* ================== sonido sintetizado (WebAudio, sin archivos) ================== */
+(() => {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  let ctx = null, maestro, motorFiltro, motorGain, m1, m2, retumbeGain, hidGain, hidTono, beepGain, ruido;
+  let silencio = localStorage.getItem("retro_mute") === "1", ultimoBeep = 0, cmdPrevio = null, listoDesde = 0;
+
+  function bufferRuido() {
+    const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return b;
+  }
+  function fuenteRuido() { const n = ctx.createBufferSource(); n.buffer = ruido; n.loop = true; n.start(); return n; }
+
+  function iniciar() {
+    if (!Ctx) return;
+    if (ctx) { ctx.resume(); return; }
+    ctx = new Ctx(); ruido = bufferRuido();
+    maestro = ctx.createGain(); maestro.gain.value = silencio ? 0 : 0.6;
+    const comp = ctx.createDynamicsCompressor(); maestro.connect(comp).connect(ctx.destination);
+
+    // motor diésel: diente de sierra + sub, con "golpeteo" (LFO) y filtro que abre con las RPM
+    motorFiltro = ctx.createBiquadFilter(); motorFiltro.type = "lowpass"; motorFiltro.frequency.value = 260; motorFiltro.Q.value = 4;
+    motorGain = ctx.createGain(); motorGain.gain.value = 0;
+    m1 = ctx.createOscillator(); m1.type = "sawtooth"; m1.frequency.value = 34;
+    m2 = ctx.createOscillator(); m2.type = "square"; m2.frequency.value = 17;
+    const m2g = ctx.createGain(); m2g.gain.value = 0.45;
+    const lfo = ctx.createOscillator(), lfoG = ctx.createGain(); lfo.frequency.value = 11; lfoG.gain.value = 5;
+    lfo.connect(lfoG); lfoG.connect(m1.frequency); lfoG.connect(m2.frequency);
+    m1.connect(motorFiltro); m2.connect(m2g).connect(motorFiltro); motorFiltro.connect(motorGain).connect(maestro);
+    [m1, m2, lfo].forEach(o => o.start());
+    // retumbe grave (orugas)
+    const rf = ctx.createBiquadFilter(); rf.type = "lowpass"; rf.frequency.value = 140;
+    retumbeGain = ctx.createGain(); retumbeGain.gain.value = 0;
+    fuenteRuido().connect(rf).connect(retumbeGain).connect(maestro);
+    // hidráulico: siseo de banda + chillido de bomba
+    const hf = ctx.createBiquadFilter(); hf.type = "bandpass"; hf.frequency.value = 1100; hf.Q.value = 1.2;
+    hidGain = ctx.createGain(); hidGain.gain.value = 0;
+    fuenteRuido().connect(hf).connect(hidGain).connect(maestro);
+    hidTono = ctx.createOscillator(); hidTono.type = "triangle"; hidTono.frequency.value = 210;
+    const ht = ctx.createGain(); ht.gain.value = 0.35; hidTono.connect(ht).connect(hidGain); hidTono.start();
+    // alarma de reversa
+    const bo = ctx.createOscillator(); bo.type = "square"; bo.frequency.value = 1180;
+    beepGain = ctx.createGain(); beepGain.gain.value = 0; bo.connect(beepGain).connect(maestro); bo.start();
+    listoDesde = ctx.currentTime + 1.2;
+  }
+
+  const objetivo = (param, valor, tiempo = 0.12) => param.setTargetAtTime(valor, ctx.currentTime, tiempo);
+
+  function golpe({ f0 = 90, f1 = 35, dur = 0.35, vol = 0.9, tipo = "sine" } = {}) {
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = tipo; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(maestro); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function soplido(dur = 0.6, vol = 0.35, frec = 2600) {   // freno de aire
+    const t = ctx.currentTime, n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    n.buffer = ruido; f.type = "highpass"; f.frequency.value = frec;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    n.connect(f).connect(g).connect(maestro); n.start(t); n.stop(t + dur);
+  }
+  function blip(f = 1500, dur = 0.06, vol = 0.18) {
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.6, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(maestro); o.start(t); o.stop(t + dur + 0.02);
+  }
+  function barrido(f0, f1, dur, vol = 0.22, tipo = "sawtooth") {
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(), fl = ctx.createBiquadFilter();
+    fl.type = "lowpass"; fl.frequency.value = 2400;
+    o.type = tipo; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.05); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(fl).connect(g).connect(maestro); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function arranqueMotor() {        // marcha + encendido
+    const t = ctx.currentTime;
+    for (let i = 0; i < 5; i++) setTimeout(() => golpe({ f0: 70, f1: 40, dur: 0.12, vol: 0.5, tipo: "square" }), i * 130);
+    setTimeout(() => { golpe({ f0: 120, f1: 30, dur: 0.6, vol: 0.9 }); soplido(0.4, 0.12, 900); }, 700);
+    listoDesde = t + 1.1;
+  }
+
+  // Cada cuadro: ajusta el motor según lo que hace la simulación
+  function cuadro() {
+    requestAnimationFrame(cuadro);
+    if (!ctx || ctx.state !== "running") return;
+    const s = window.SIM; if (!s) return;
+    const enLinea = document.getElementById("enlace")?.textContent === "ENLACE OK";
+    const traccion = Math.abs(s.v) > 15, giro = !!s.giro, hidraulico = !!(s.cabVel || s.palaVel);
+    const rpm = ctx.currentTime < listoDesde ? 0 : traccion ? 1 : giro ? 0.75 : hidraulico ? 0.55 : enLinea ? 0.22 : 0.12;
+    objetivo(m1.frequency, 30 + rpm * 46, 0.25); objetivo(m2.frequency, 15 + rpm * 23, 0.25);
+    objetivo(motorFiltro.frequency, 220 + rpm * 1300, 0.25);
+    objetivo(motorGain.gain, rpm ? 0.08 + rpm * 0.14 : 0, 0.3);
+    objetivo(retumbeGain.gain, traccion || giro ? 0.5 : 0, 0.2);
+    objetivo(hidGain.gain, hidraulico ? 0.1 : 0, 0.08);
+    objetivo(hidTono.frequency, s.palaVel > 0 ? 340 : s.palaVel < 0 ? 170 : 240, 0.4);
+    // bip-bip de reversa
+    const reversa = s.v < 0, t = ctx.currentTime;
+    if (reversa && t - ultimoBeep > 0.9) {
+      ultimoBeep = t;
+      beepGain.gain.setValueAtTime(0.11, t); beepGain.gain.setValueAtTime(0, t + 0.42);
+    }
+    // cambio de comando confirmado: golpe al detener, blip al resto
+    if (s.cmd !== cmdPrevio) {
+      if (cmdPrevio !== null && t > listoDesde) {
+        if (s.cmd === "DETENER") { golpe(); soplido(); } else blip(900, 0.05, 0.12);
+      }
+      cmdPrevio = s.cmd;
+    }
+  }
+  requestAnimationFrame(cuadro);
+
+  function ponerSilencio(valor) {
+    silencio = valor; localStorage.setItem("retro_mute", valor ? "1" : "0");
+    const b = document.getElementById("btnSonido");
+    if (b) { b.textContent = valor ? "♪ OFF" : "♪ ON"; b.classList.toggle("apagado", valor); }
+    if (ctx) objetivo(maestro.gain, valor ? 0 : 0.6, 0.05);
+  }
+  ponerSilencio(silencio);
+  document.getElementById("btnSonido").onclick = () => { iniciar(); ponerSilencio(!silencio); };
+  addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+    if (e.key.toLowerCase() === "m") ponerSilencio(!silencio);
+  });
+
+  // Los navegadores exigen un gesto del usuario para sonar: el botón ARRANCAR o el primer toque
+  addEventListener("retro:arrancar", () => { iniciar(); if (ctx) arranqueMotor(); });
+  addEventListener("pointerdown", () => iniciar(), { once: true });
+  addEventListener("keydown", () => iniciar(), { once: true });
+  addEventListener("retro:tx", () => ctx && blip(1700, 0.05, 0.1));
+  addEventListener("retro:demo", () => ctx && barrido(180, 1400, 0.6));
+  addEventListener("retro:demofin", () => ctx && (blip(1200, 0.09, 0.2), setTimeout(() => blip(1800, 0.12, 0.2), 120)));
+  addEventListener("retro:error", () => ctx && (golpe({ f0: 160, f1: 120, dur: 0.18, vol: 0.35, tipo: "square" }),
+    setTimeout(() => golpe({ f0: 160, f1: 110, dur: 0.22, vol: 0.35, tipo: "square" }), 210)));
+  addEventListener("retro:salto", () => ctx && barrido(1600, 300, 0.35, 0.15, "sine"));
+  document.addEventListener("visibilitychange", () => { if (ctx) document.hidden ? ctx.suspend() : ctx.resume(); });
+})();
+
+</script>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+<script type="module">
+/* ================== escena 3D (Three.js): lee window.SIM, la misma simulación del radar ================== */
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+try {
+  const arena = document.querySelector(".arena"), cont = document.getElementById("escena3d");
+  const MOVIL = matchMedia("(max-width:760px), (max-height:520px)").matches;
+  const MUNDO = 170;
+  const C = { cian: 0x00f0ff, magenta: 0xff2bd6, ambar: 0xffb627, rojo: 0xff3355, verde: 0x39ff88 };
+
+  // ---------- render ----------
+  const renderer = new THREE.WebGLRenderer({ antialias: !MOVIL, powerPreference: "high-performance" });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, MOVIL ? 1.5 : 2));
+  renderer.shadowMap.enabled = !MOVIL; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35;
+  cont.appendChild(renderer.domElement);
+  arena.classList.add("modo3d");
+
+  const escena = new THREE.Scene();
+  escena.background = new THREE.Color(0x02050b);
+  escena.fog = new THREE.FogExp2(0x02050b, 0.0034);
+  const camara = new THREE.PerspectiveCamera(48, 1, 0.5, 2500);
+  camara.position.set(-85, 62, 95);
+
+  const controles = new OrbitControls(camara, renderer.domElement);
+  controles.enableDamping = true; controles.enablePan = false;
+  controles.minDistance = 45; controles.maxDistance = 420; controles.maxPolarAngle = 1.42;
+
+  let composer = null;
+  if (!MOVIL) {
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(escena, camara));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(512, 512), 0.6, 0.5, 0.24));
+    composer.addPass(new OutputPass());
+  }
+
+  // ---------- luces ----------
+  escena.add(new THREE.HemisphereLight(0x8fc8ff, 0x140a1e, 1.1));
+  const sol = new THREE.DirectionalLight(0xbfe8ff, 1.5);
+  sol.position.set(-90, 160, 70); sol.castShadow = true;
+  sol.shadow.mapSize.set(2048, 2048);
+  Object.assign(sol.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 10, far: 420 });
+  escena.add(sol, sol.target);
+  const brilloSuelo = new THREE.PointLight(C.cian, 900, 70, 2); brilloSuelo.position.y = 6; escena.add(brilloSuelo);
+
+  // ---------- materiales ----------
+  const mat = {
+    chasis: new THREE.MeshStandardMaterial({ color: 0x34425e, metalness: 0.6, roughness: 0.4, emissive: 0x0a1424, emissiveIntensity: 0.6 }),
+    oscuro: new THREE.MeshStandardMaterial({ color: 0x0b0f17, metalness: 0.6, roughness: 0.6 }),
+    amarillo: new THREE.MeshStandardMaterial({ color: 0xffae1a, metalness: 0.45, roughness: 0.32, emissive: 0x3a2200, emissiveIntensity: 0.6 }),
+    acero: new THREE.MeshStandardMaterial({ color: 0xc8d4e6, metalness: 1, roughness: 0.18 }),
+    vidrio: new THREE.MeshStandardMaterial({ color: 0x0a2a33, emissive: C.cian, emissiveIntensity: 0.9, transparent: true, opacity: 0.85, metalness: 0.3, roughness: 0.05 }),
+    magenta: new THREE.MeshBasicMaterial({ color: C.magenta }),
+    cianB: new THREE.MeshBasicMaterial({ color: C.cian }),
+    faro: new THREE.MeshBasicMaterial({ color: 0xe8fbff }),
+  };
+  const bordes = (malla, color = C.cian, opacidad = 0.55) => {
+    const l = new THREE.LineSegments(new THREE.EdgesGeometry(malla.geometry, 25),
+      new THREE.LineBasicMaterial({ color, transparent: true, opacity: opacidad }));
+    malla.add(l); return malla;
+  };
+  const caja = (w, h, d, m, x = 0, y = 0, z = 0, borde) => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    b.position.set(x, y, z); b.castShadow = b.receiveShadow = true;
+    if (borde) bordes(b, borde);
+    return b;
+  };
+
+  // ---------- terreno ----------
+  const suelo = new THREE.Mesh(new THREE.CircleGeometry(1100, 64), new THREE.MeshStandardMaterial({ color: 0x050a12, roughness: 0.92, metalness: 0.15 }));
+  suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true; escena.add(suelo);
+  const grid = new THREE.GridHelper(700, 70, C.cian, 0x0b3442);
+  grid.material.transparent = true; grid.material.opacity = 0.28; grid.position.y = 0.05; escena.add(grid);
+  const anillo = (r1, r2, color, op) => {
+    const m = new THREE.Mesh(new THREE.RingGeometry(r1, r2, 160), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, side: THREE.DoubleSide }));
+    m.rotation.x = -Math.PI / 2; m.position.y = 0.12; escena.add(m); return m;
+  };
+  anillo(MUNDO - 1.5, MUNDO + 1.5, C.cian, 0.9);
+  anillo(MUNDO + 4, MUNDO + 10, C.cian, 0.08);
+  [60, 115].forEach(r => anillo(r - 0.4, r + 0.4, C.cian, 0.18));
+  // postes del perímetro
+  for (let a = 0; a < 360; a += 22.5) {
+    const r = a * Math.PI / 180, g = new THREE.Group();
+    g.position.set(Math.cos(r) * (MUNDO + 7), 0, Math.sin(r) * (MUNDO + 7));
+    const p = caja(2.2, 14, 2.2, mat.oscuro, 0, 7, 0, C.cian);
+    const punta = new THREE.Mesh(new THREE.SphereGeometry(1.5, 12, 8), a % 45 ? mat.cianB : mat.magenta);
+    punta.position.y = 15; g.add(p, punta); escena.add(g);
+  }
+  // rocas fuera del área de trabajo
+  const rocaGeo = new THREE.IcosahedronGeometry(1, 0);
+  for (let i = 0; i < 46; i++) {
+    const r = MUNDO + 30 + Math.random() * 240, a = Math.random() * Math.PI * 2, t = 4 + Math.random() * 12;
+    const m = new THREE.Mesh(rocaGeo, mat.oscuro);
+    m.scale.set(t * (0.8 + Math.random() * 0.6), t * (0.5 + Math.random() * 0.6), t);
+    m.position.set(Math.cos(a) * r, t * 0.3, Math.sin(a) * r); m.rotation.set(Math.random(), Math.random() * 6, Math.random());
+    m.castShadow = m.receiveShadow = true; bordes(m, Math.random() < 0.2 ? C.magenta : C.cian, 0.25); escena.add(m);
+  }
+  // horizonte: torres con ventanas
+  for (let i = 0; i < 60; i++) {
+    const a = Math.random() * Math.PI * 2, r = 520 + Math.random() * 380, h = 40 + Math.random() * 190, w = 18 + Math.random() * 30;
+    const t = caja(w, h, w, mat.oscuro, Math.cos(a) * r, h / 2, Math.sin(a) * r);
+    bordes(t, Math.random() < 0.3 ? C.magenta : C.cian, 0.35); escena.add(t);
+  }
+  // estrellas
+  {
+    const n = 900, pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, e = Math.random() * 0.45 + 0.08, r = 1400;
+      pos.set([Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r], i * 3);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    escena.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9fdcff, size: 2.2, sizeAttenuation: false, fog: false })));
+  }
+
+  // ---------- retroexcavadora (adelante = +X) ----------
+  const retro = new THREE.Group(); escena.add(retro);
+  // orugas con zapatas que se mueven sobre un óvalo
+  const ORUGA = { largo: 36, radio: 4, z: 11.5 };
+  const perimetro = 2 * ORUGA.largo + 2 * Math.PI * ORUGA.radio, ZAPATAS = 30;
+  const zapataGeo = new THREE.BoxGeometry(2.1, 0.9, 7.6);
+  const zapatas = [];
+  function puntoOruga(u) {   // u en [0, perímetro): recorre arriba → curva delantera → abajo → curva trasera
+    const L = ORUGA.largo, R = ORUGA.radio, cy = R + 0.5;
+    u = ((u % perimetro) + perimetro) % perimetro;
+    if (u < L) return [L / 2 - u, cy + R, Math.PI];
+    u -= L; if (u < Math.PI * R) { const a = Math.PI / 2 + u / R; return [-L / 2 + Math.cos(a) * R, cy + Math.sin(a) * R, a + Math.PI / 2]; }
+    u -= Math.PI * R; if (u < L) return [-L / 2 + u, cy - R, 0];
+    u -= L; const a = -Math.PI / 2 + u / R; return [L / 2 + Math.cos(a) * R, cy + Math.sin(a) * R, a + Math.PI / 2];
+  }
+  for (const lado of [-1, 1]) {
+    const g = new THREE.Group(); g.position.z = lado * ORUGA.z; retro.add(g);
+    g.add(caja(ORUGA.largo, 5, 6, mat.chasis, 0, ORUGA.radio + 0.5, 0, C.cian));
+    for (const x of [-ORUGA.largo / 2, ORUGA.largo / 2]) {
+      const rueda = new THREE.Mesh(new THREE.CylinderGeometry(ORUGA.radio - 0.6, ORUGA.radio - 0.6, 6.6, 20), mat.acero);
+      rueda.rotation.x = Math.PI / 2; rueda.position.set(x, ORUGA.radio + 0.5, 0); g.add(rueda);
+    }
+    const inst = new THREE.InstancedMesh(zapataGeo, mat.oscuro, ZAPATAS); inst.castShadow = true; g.add(inst);
+    const neon = new THREE.Mesh(new THREE.BoxGeometry(ORUGA.largo - 4, 0.5, 0.4), lado > 0 ? mat.magenta : mat.cianB);
+    neon.position.set(0, ORUGA.radio + 0.5, lado * 3.25); g.add(neon);
+    zapatas.push({ inst, fase: 0, lado });
+  }
+  const dummy = new THREE.Object3D();
+  function moverZapatas(o) {
+    for (let i = 0; i < ZAPATAS; i++) {
+      const [x, y, ang] = puntoOruga(o.fase + i * perimetro / ZAPATAS);
+      dummy.position.set(x, y, 0); dummy.rotation.set(0, 0, ang); dummy.updateMatrix(); o.inst.setMatrixAt(i, dummy.matrix);
+    }
+    o.inst.instanceMatrix.needsUpdate = true;
+  }
+  retro.add(caja(24, 4, 17, mat.oscuro, 0, 8, 0));
+
+  // torre giratoria
+  const torre = new THREE.Group(); torre.position.y = 10.5; retro.add(torre);
+  const plato = new THREE.Mesh(new THREE.CylinderGeometry(9.5, 10, 1.6, 32), mat.acero); plato.castShadow = true; torre.add(plato);
+  torre.add(caja(24, 8, 19, mat.chasis, -2, 5, 0, C.cian));                          // casa del motor
+  const contrapeso = new THREE.Mesh(new THREE.CylinderGeometry(9.5, 9.5, 8, 24, 1, false, Math.PI / 2, Math.PI), mat.amarillo);
+  contrapeso.position.set(-14, 5, 0); contrapeso.castShadow = true; bordes(contrapeso, C.ambar, 0.4); torre.add(contrapeso);
+  torre.add(caja(1, 1.2, 19.2, mat.magenta, 10.1, 3.2, 0));                          // franja neón frontal
+  const cabina = caja(10, 11, 8.5, mat.chasis, 5, 14.5, -5, C.magenta); torre.add(cabina);
+  torre.add(caja(0.4, 7, 7.2, mat.vidrio, 10.1, 15, -5), caja(8.4, 6.5, 0.4, mat.vidrio, 5, 15.3, -9.35));
+  torre.add(caja(3.2, 1, 3.2, mat.oscuro, 5, 20.6, -5));
+  const escape = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 7, 10), mat.acero); escape.position.set(-9, 12, 5); torre.add(escape);
+  // torreta de advertencia
+  const torreta = new THREE.Group(); torreta.position.set(5, 21.6, -5); torre.add(torreta);
+  torreta.add(new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 1.8, 12), new THREE.MeshBasicMaterial({ color: C.ambar, transparent: true, opacity: 0.9 })));
+  const haz = new THREE.Mesh(new THREE.ConeGeometry(5, 22, 16, 1, true), new THREE.MeshBasicMaterial({ color: C.ambar, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }));
+  haz.rotation.z = -Math.PI / 2; haz.position.x = 11; torreta.add(haz);
+  const luzTorreta = new THREE.PointLight(C.ambar, 0, 60, 2); torreta.add(luzTorreta);
+  // faros
+  const faros = new THREE.SpotLight(0xdff6ff, 0, 140, 0.5, 0.55, 1.4);
+  faros.position.set(10.5, 9, 0); faros.target.position.set(60, 0, 0); torre.add(faros, faros.target);
+  [-6, 6].forEach(z => torre.add(caja(0.5, 1.4, 2.4, mat.faro, 10.4, 8.6, z)));
+
+  // brazo: pluma → balancín → cucharón (articulados por la pala de la simulación)
+  const pluma = new THREE.Group(); pluma.position.set(9, 6.5, 4.5); torre.add(pluma);
+  pluma.add(caja(30, 3.6, 3.2, mat.amarillo, 15, 0, 0, C.ambar));
+  const balancin = new THREE.Group(); balancin.position.set(30, 0, 0); pluma.add(balancin);
+  balancin.add(caja(22, 2.8, 2.6, mat.amarillo, 11, 0, 0, C.ambar));
+  const cucharon = new THREE.Group(); cucharon.position.set(22, 0, 0); balancin.add(cucharon);
+  {
+    const f = new THREE.Shape();
+    f.moveTo(0, 0); f.lineTo(7.5, -1.2); f.quadraticCurveTo(9.5, -5, 6, -8.5); f.lineTo(4.2, -8.2); f.quadraticCurveTo(5.5, -4, 1.5, -2.6); f.lineTo(0, 0);
+    const g = new THREE.ExtrudeGeometry(f, { depth: 7, bevelEnabled: true, bevelSize: 0.3, bevelThickness: 0.3, bevelSegments: 1 });
+    g.translate(0, 0, -3.5);
+    const m = new THREE.Mesh(g, mat.oscuro); m.castShadow = true; bordes(m, C.magenta, 0.7); cucharon.add(m);
+    for (let i = -2; i <= 2; i++) { const d = caja(0.8, 1.4, 0.8, mat.acero, 6.2, -8.6, i * 1.5); d.rotation.z = 0.3; cucharon.add(d); }
+  }
+  // pistón hidráulico de la pluma (cromado, se estira con el brazo)
+  const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1, 12), mat.acero); piston.castShadow = true; torre.add(piston);
+  const pA = new THREE.Vector3(), pB = new THREE.Vector3(), eje = new THREE.Vector3(0, 1, 0);
+  function actualizarPiston() {
+    pA.set(9.5, 1.5, 4.5);
+    pB.set(14, -1.6, 0); pluma.localToWorld(pB); torre.worldToLocal(pB);
+    const dir = pB.clone().sub(pA), largo = dir.length();
+    piston.position.copy(pA).addScaledVector(dir, 0.5); piston.scale.set(1, largo, 1);
+    piston.quaternion.setFromUnitVectors(eje, dir.normalize());
+  }
+
+  // ---------- efectos ----------
+  // polvo (partículas con tamaño y opacidad propios)
+  const NP = MOVIL ? 160 : 420;
+  const pPos = new Float32Array(NP * 3), pVel = new Float32Array(NP * 3), pVida = new Float32Array(NP), pTam = new Float32Array(NP);
+  const polvoGeo = new THREE.BufferGeometry();
+  polvoGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+  polvoGeo.setAttribute("vida", new THREE.BufferAttribute(pVida, 1));
+  polvoGeo.setAttribute("tam", new THREE.BufferAttribute(pTam, 1));
+  const polvo = new THREE.Points(polvoGeo, new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { color: { value: new THREE.Color(0x7fd9ff) } },
+    vertexShader: `attribute float vida; attribute float tam; varying float vV;
+      void main(){ vV = vida; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = tam * (300.0 / -mv.z); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 color; varying float vV;
+      void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard; gl_FragColor = vec4(color, (0.5 - d) * vV * 0.55); }`,
+  }));
+  polvo.frustumCulled = false; escena.add(polvo);
+  let siguiente = 0;
+  function emitirPolvo(x, y, z, vx, vz, n = 1, tam = 3) {
+    for (let k = 0; k < n; k++) {
+      const i = siguiente; siguiente = (siguiente + 1) % NP;
+      pPos.set([x + (Math.random() - 0.5) * 4, y, z + (Math.random() - 0.5) * 4], i * 3);
+      pVel.set([vx + (Math.random() - 0.5) * 6, 4 + Math.random() * 6, vz + (Math.random() - 0.5) * 6], i * 3);
+      pVida[i] = 1; pTam[i] = tam * (0.7 + Math.random() * 0.8);
+    }
+  }
+  function actualizarPolvo(dt) {
+    for (let i = 0; i < NP; i++) {
+      if (pVida[i] <= 0) continue;
+      pVida[i] -= dt * 0.8; pTam[i] += dt * 3;
+      pPos[i * 3] += pVel[i * 3] * dt; pPos[i * 3 + 1] += pVel[i * 3 + 1] * dt; pPos[i * 3 + 2] += pVel[i * 3 + 2] * dt;
+      pVel[i * 3 + 1] -= dt * 4;
+      if (pVida[i] < 0) pVida[i] = 0;
+    }
+    polvoGeo.attributes.position.needsUpdate = polvoGeo.attributes.vida.needsUpdate = polvoGeo.attributes.tam.needsUpdate = true;
+  }
+  // huellas de las orugas (dos líneas que siguen el rastro de la simulación)
+  const MAXH = 260;
+  const huellas = [-1, 1].map(() => {
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MAXH * 3), 3));
+    const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color: C.magenta, transparent: true, opacity: 0.55 }));
+    l.frustumCulled = false; escena.add(l); return l;
+  });
+  function actualizarHuellas() {
+    const r = window.SIM.rastro, n = Math.min(r.length, MAXH);
+    huellas.forEach((linea, k) => {
+      const lado = k ? 1 : -1, a = linea.geometry.attributes.position;
+      for (let i = 0; i < n; i++) {
+        const p = r[r.length - n + i], q = r[Math.max(r.length - n + i - 1, 0)], p2 = r[Math.min(r.length - n + i + 1, r.length - 1)];
+        let dx = p2[0] - q[0], dz = p2[1] - q[1]; const m = Math.hypot(dx, dz) || 1; dx /= m; dz /= m;
+        a.setXYZ(i, p[0] - dz * ORUGA.z * lado, 0.2, p[1] + dx * ORUGA.z * lado);
+      }
+      a.needsUpdate = true; linea.geometry.setDrawRange(0, n);
+    });
+  }
+  // ondas en el suelo (STOP, DEMO, salto)
+  const ondas = [];
+  function onda(color, x, z, max = 60, vel = 70) {
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 64), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, 0.3, z); escena.add(m); ondas.push({ m, r: 1, max, vel });
+  }
+  function actualizarOndas(dt) {
+    for (let i = ondas.length - 1; i >= 0; i--) {
+      const o = ondas[i]; o.r += o.vel * dt; o.m.scale.setScalar(o.r); o.m.material.opacity = 0.9 * (1 - o.r / o.max);
+      if (o.r >= o.max) { escena.remove(o.m); o.m.geometry.dispose(); o.m.material.dispose(); ondas.splice(i, 1); }
+    }
+  }
+  addEventListener("retro:demo", () => onda(C.magenta, retro.position.x, retro.position.z, 120, 90));
+  addEventListener("retro:salto", () => setTimeout(() => onda(C.cian, retro.position.x, retro.position.z, 50, 80), 30));
+  addEventListener("retro:error", () => onda(C.rojo, retro.position.x, retro.position.z, 40, 60));
+
+  // ---------- cámaras ----------
+  const MODOS = ["ÓRBITA", "PERSECUCIÓN", "CENITAL"];
+  let modo = Math.max(0, MODOS.indexOf(localStorage.getItem("retro_cam") || "ÓRBITA"));
+  const btnCam = document.getElementById("btnCam");
+  function ponerModo(m) {
+    modo = m; localStorage.setItem("retro_cam", MODOS[m]);
+    btnCam.textContent = "CÁM · " + MODOS[m]; controles.enabled = m === 0;
+  }
+  ponerModo(modo);
+  btnCam.onclick = () => ponerModo((modo + 1) % MODOS.length);
+  addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+    if (e.key.toLowerCase() === "c") ponerModo((modo + 1) % MODOS.length);
+  });
+
+  // ---------- tamaño ----------
+  function ajustar() {
+    const w = cont.clientWidth, h = cont.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); camara.aspect = w / h; camara.updateProjectionMatrix();
+    if (composer) composer.setSize(w, h);
+    if (typeof window.ajustarCanvas === "function") window.ajustarCanvas();   // el minimapa cambió de tamaño
+  }
+  new ResizeObserver(ajustar).observe(cont); ajustar();
+
+  // ---------- bucle ----------
+  const reloj = new THREE.Clock(), objetivo = new THREE.Vector3(), previo = new THREE.Vector3(), tmp = new THREE.Vector3();
+  let cmdPrevio = null, visible = true;
+  document.addEventListener("visibilitychange", () => { visible = !document.hidden; });
+  function cuadro() {
+    requestAnimationFrame(cuadro);
+    if (!visible) return;
+    const dt = Math.min(0.05, reloj.getDelta()), t = reloj.elapsedTime, s = window.SIM;
+    if (!s) return;
+    const rumbo = s.rumbo * Math.PI / 180;
+    retro.position.set(s.x, 0, s.y);
+    retro.rotation.y = -rumbo;
+    torre.rotation.y = -s.cabina * Math.PI / 180;
+    pluma.rotation.z = THREE.MathUtils.lerp(-0.28, 0.72, s.pala);
+    balancin.rotation.z = THREE.MathUtils.lerp(-1.75, -0.95, s.pala);
+    cucharon.rotation.z = THREE.MathUtils.lerp(-0.55, 0.55, s.pala);
+    actualizarPiston();
+
+    // orugas: avanzan con la velocidad; al girar cada lado va en sentido contrario
+    zapatas.forEach(o => {
+      o.fase += (s.v * 0.35 + (s.giro || 0) * 0.12 * o.lado) * dt;
+      moverZapatas(o);
+    });
+    const trabajando = s.activo && s.activo !== "DETENER";
+    // polvo detrás de las orugas
+    if (Math.abs(s.v) > 15 || s.giro) {
+      const atras = -Math.sign(s.v || 1);
+      for (const lado of [-1, 1]) {
+        tmp.set(atras * ORUGA.largo / 2, 1.5, lado * ORUGA.z); retro.localToWorld(tmp);
+        if (Math.random() < (MOVIL ? 0.5 : 0.9)) emitirPolvo(tmp.x, tmp.y, tmp.z, Math.cos(rumbo) * atras * 8, Math.sin(rumbo) * atras * 8, 1, 3.2);
+      }
+    }
+    // el cucharón levanta polvo al tocar el suelo
+    if (s.palaVel < 0 && s.pala < 0.08) {
+      tmp.set(6, -8, 0); cucharon.localToWorld(tmp); emitirPolvo(tmp.x, 1, tmp.z, 0, 0, 2, 4.5);
+    }
+    actualizarPolvo(dt); actualizarHuellas(); actualizarOndas(dt);
+
+    // luces: torreta gira y destella si trabaja; faros encendidos con enlace
+    const enLinea = document.getElementById("enlace")?.textContent === "ENLACE OK";
+    torreta.rotation.y += dt * (trabajando ? 7 : 1.2);
+    haz.visible = trabajando; luzTorreta.intensity = trabajando ? 260 + Math.sin(t * 14) * 120 : 0;
+    faros.intensity = enLinea ? 3200 : 0;
+    brilloSuelo.position.set(retro.position.x, 6, retro.position.z);
+    brilloSuelo.color.setHex(s.activo === "DETENER" ? C.rojo : C.cian);
+    brilloSuelo.intensity = trabajando ? 1400 : 700;
+    sol.position.set(retro.position.x - 90, 160, retro.position.z + 70); sol.target.position.copy(retro.position);
+
+    if (s.cmd !== cmdPrevio) {               // comando confirmado nuevo
+      if (cmdPrevio !== null && s.cmd === "DETENER") onda(C.rojo, retro.position.x, retro.position.z, 45, 75);
+      cmdPrevio = s.cmd;
+    }
+
+    // cámara
+    objetivo.set(retro.position.x, 10, retro.position.z);
+    if (modo === 0) {
+      tmp.copy(objetivo).sub(previo);
+      if (tmp.lengthSq() > 2500) tmp.set(0, 0, 0);       // al reaparecer al otro lado, no arrastrar la cámara
+      camara.position.add(tmp); controles.target.copy(objetivo); controles.update();
+    } else {
+      const ang = rumbo;
+      const deseada = modo === 1
+        ? tmp.set(retro.position.x - Math.cos(ang) * 110, 58, retro.position.z - Math.sin(ang) * 110)
+        : tmp.set(retro.position.x - 1, 250, retro.position.z + 30);
+      camara.position.lerp(deseada, 1 - Math.pow(0.02, dt));
+      camara.lookAt(modo === 1 ? objetivo.clone().add(new THREE.Vector3(Math.cos(ang) * 30, 0, Math.sin(ang) * 30)) : objetivo);
+      controles.target.copy(objetivo);
+    }
+    previo.copy(objetivo);
+    composer ? composer.render() : renderer.render(escena, camara);
+  }
+  cuadro();
+  window.RETRO3D = true;
+} catch (e) {
+  console.error("Escena 3D no disponible:", e);
+  document.querySelector(".arena").classList.remove("modo3d");
+  window.RETRO3D = false;
+}
+
+</script>
 </body>
 </html>
