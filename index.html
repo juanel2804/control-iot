@@ -437,7 +437,7 @@ html{overflow-x:hidden}
 /* ================== utilidades ================== */
 const $ = id => document.getElementById(id);
 // Servida por la propia API (/control) usa el mismo origen; publicada (GitHub Pages) apunta a la API pública en EC2 (HTTPS/WSS).
-const DESDE_API = /^/control(/|$)/.test(location.pathname);
+const DESDE_API = location.pathname === "/control" || location.pathname.startsWith("/control/");
 const API_BASE = DESDE_API ? location.origin
   : (new URLSearchParams(location.search).get("api") || localStorage.getItem("iot_api_base") || "https://100-63-187-92.sslip.io").replace(/\/+$/, "");
 const WS_URL = id => `${API_BASE.replace(/^http/, "ws")}/ws/vehiculos/${id}`;
