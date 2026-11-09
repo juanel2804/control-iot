@@ -23,7 +23,11 @@ export class WsClient extends Emitter {
     this.#url = url;
     this.#t = timing;
     window.addEventListener('online', () => this.reconnectNow());
-    window.addEventListener('offline', () => this.#setState('offline'));
+    window.addEventListener('offline', () => {
+      // se cierra el socket de verdad: onclose marca «Desconectado» y programa el reintento (sin dejar sockets huérfanos)
+      if (this.#ws) this.#ws.close();
+      else this.#setState('offline');
+    });
   }
 
   start() {
