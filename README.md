@@ -1,7 +1,7 @@
 # Control IoT · Práctica 4.1 (Implementación de soluciones IoT)
 
 App web de **CONTROL** de la excavadora IoT («Excavadora de Juan»): joysticks de tracción y de cabina/pala, STOP prioritario,
-12 botones del catálogo, IA, gestos y «Ve ahí». Es solo frontend (HTML5 + CSS3 + JavaScript, un solo `index.html`) y consume la API
+12 botones del catálogo, IA, gestos, Arena y sala de turnos. Es solo frontend (HTML5 + CSS3 + JavaScript, un solo `index.html`) y consume la API
 de AWS (FastAPI + Amazon RDS) por **REST (Fetch)** y **WebSocket (WSS)**.
 
 Publicada en GitHub Pages: https://juanel2804.github.io/control-iot/
@@ -10,7 +10,8 @@ Publicada en GitHub Pages: https://juanel2804.github.io/control-iot/
 - `index.html` — la aplicación.
 - `arena.js` — pestaña **🕹️ Arena** (solo frontend, mismos comandos y mismo WebSocket).
 - `sala.js` — pestaña **🎟️ Sala** (turnos con QR y panel del administrador) y botón **🎬 DEMOS** del control.
-- `gamer.css` — diseño gamer (fuente HUD, esquinas de neón y un color por pestaña).
+- `gamer.css` — diseño «cabina de máquina pesada»: amarillo máquina con franjas de precaución, letra de esténcil y paneles de esquinas cortadas.
+- `gamer.js` — pantalla de bienvenida (revisa enlace, API, excavadora y tu acceso antes de «Tomar el mando»), telemetría real bajo el tablero y sonidos.
 - `manifest.webmanifest`, `sw.js`, `icono-192.png`, `icono-512.png` — instalable como app.
 - `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png` — favicon propio.
 - `docs/` — capturas de la app publicada.

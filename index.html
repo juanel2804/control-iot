@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Excavadora de Juan · Control IoT 4.1</title>
 <meta name="description" content="Control de la excavadora IoT: joysticks, 12 botones, IA, voz y gestos.">
-<meta name="theme-color" content="#070a12">
+<meta name="theme-color" content="#05070b">
 <meta name="color-scheme" content="dark">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -206,8 +206,10 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700;800&family=Saira+Stencil+One&display=swap">
 <link rel="stylesheet" href="gamer.css">
+<!-- Pantalla de arranque (gamer.js): se esconde la app hasta que aparece; si algo falla, se muestra sola a los 2.5 s -->
+<script>try { if (!sessionStorage.getItem("intro_vista")) { document.documentElement.classList.add("arranque"); setTimeout(() => document.documentElement.classList.remove("arranque"), 2500); } } catch {}</script>
 </head>
 <body>
 
@@ -332,6 +334,7 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
   </section>
 
   <!-- =============================== VE AHÍ =============================== -->
+  <!-- «Ve ahí» está retirada del menú (2026-11-12): la sección queda oculta para no romper el resto del script -->
   <section id="vMapa" hidden>
     <div class="dosCol mapaCols">
       <div class="vidrio tarjeta">
@@ -430,7 +433,6 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
   <button data-v="vControl" aria-current="page"><b>🎮</b>Control</button>
   <button data-v="vIA" data-nube><b>✨</b>IA</button>
   <button data-v="vGestos" data-nube><b>✋</b>Gestos</button>
-  <button data-v="vMapa" data-nube><b>📍</b>Ve ahí</button>
   <button data-v="vArena" data-nube><b>🕹️</b>Arena</button>
   <button data-v="vAjustes"><b>⚙️</b>Ajustes</button>
 </nav>
@@ -1374,6 +1376,7 @@ pintarModo();
 conectar();
 revisarCopiloto();
 </script>
+<script src="gamer.js"></script>
 <script src="sala.js"></script>
 <script src="arena.js"></script>
 </body>
