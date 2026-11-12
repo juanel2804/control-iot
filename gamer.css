@@ -1,0 +1,145 @@
+/* =========================================================================
+   Rediseño gamer · Excavadora de Juan
+   Capa encima del estilo de index.html (no cambia funciones ni ids). Cada pestaña tiene su acento:
+   Control cian · IA violeta · Gestos verde · Ve ahí ámbar · Arena rosa · Sala lima · Ajustes gris.
+   ========================================================================= */
+:root { --rosa:#ff3ec9; --lima:#b6ff3e; --acento:var(--cian); --hud:"Orbitron", "Segoe UI", system-ui, sans-serif; }
+#vControl { --acento:var(--cian); } #vIA { --acento:var(--violeta); } #vGestos { --acento:var(--verde); }
+#vMapa { --acento:var(--ambar); } #vArena { --acento:var(--rosa); } #vSala, .sala-barra, .hoja { --acento:var(--lima); }
+#vAjustes { --acento:#9fb3d1; }
+
+/* líneas de monitor muy suaves encima de todo */
+body::after { content:""; position:fixed; inset:0; pointer-events:none; z-index:60; opacity:.35;
+  background:repeating-linear-gradient(180deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px); }
+
+/* ---------- cabecera ---------- */
+header { border-bottom:1px solid transparent;
+  border-image:linear-gradient(90deg, transparent, var(--cian), var(--violeta), transparent) 1; }
+.marca { font-family:var(--hud); font-size:14px; letter-spacing:3px;
+  background:linear-gradient(90deg, #fff 0 40%, var(--cian) 55%, var(--violeta)); -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:parpadeo 7s infinite; }
+.marca span { color:transparent; }
+@keyframes parpadeo { 0%, 92%, 100% { opacity:1; } 93% { opacity:.4; } 94% { opacity:1; } 96% { opacity:.65; } }
+.led { border-radius:6px; }   /* los indicadores conservan la fuente normal: en el cel no caben con la de HUD */
+
+/* ---------- tarjetas: marco tipo HUD con esquinas de neón ---------- */
+:where(.vidrio) { position:relative; }
+.vidrio { border-radius:14px; }
+.tarjeta::after, .hud::after { content:""; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none;
+  --l:16px; --g:2px;
+  background:
+    linear-gradient(var(--acento), var(--acento)) top left / var(--l) var(--g) no-repeat,
+    linear-gradient(var(--acento), var(--acento)) top left / var(--g) var(--l) no-repeat,
+    linear-gradient(var(--acento), var(--acento)) bottom right / var(--l) var(--g) no-repeat,
+    linear-gradient(var(--acento), var(--acento)) bottom right / var(--g) var(--l) no-repeat;
+  filter:drop-shadow(0 0 4px var(--acento)); opacity:.85; }
+.tarjeta > b:first-child, .tarjeta > .fila:first-child > b, .sala-tit, .sala-sub, .lado small {
+  font-family:var(--hud); letter-spacing:1.5px; }
+.sala-tit { font-weight:900; font-size:14px; color:var(--acento); text-shadow:0 0 12px color-mix(in srgb, var(--acento) 60%, transparent); }
+.sala-sub { margin:14px 0 6px; font-size:11px; color:var(--suave); font-weight:800; }
+
+/* ---------- navegación ---------- */
+nav { border-top:1px solid transparent; border-image:linear-gradient(90deg, transparent, rgba(62,230,255,.6), transparent) 1; }
+nav button { position:relative; font-family:var(--hud); font-size:9px; letter-spacing:.6px; text-transform:uppercase; }
+nav button[aria-current="page"] { color:#fff; }
+nav button[aria-current="page"]::before { content:""; position:absolute; top:0; left:22%; right:22%; height:3px; border-radius:0 0 4px 4px;
+  background:var(--cian); box-shadow:0 0 12px var(--cian); }
+nav button[data-v="vIA"][aria-current]::before { background:var(--violeta); box-shadow:0 0 12px var(--violeta); }
+nav button[data-v="vGestos"][aria-current]::before { background:var(--verde); box-shadow:0 0 12px var(--verde); }
+nav button[data-v="vMapa"][aria-current]::before { background:var(--ambar); box-shadow:0 0 12px var(--ambar); }
+nav button[data-v="vArena"][aria-current]::before { background:var(--rosa); box-shadow:0 0 12px var(--rosa); }
+nav button[data-v="vSala"][aria-current]::before { background:var(--lima); box-shadow:0 0 12px var(--lima); }
+@media (orientation: landscape) and (max-height: 600px) {
+  nav { border-image:linear-gradient(180deg, transparent, rgba(62,230,255,.6), transparent) 1; }
+  nav button[aria-current="page"]::before { top:22%; bottom:22%; left:0; right:auto; width:3px; height:auto; border-radius:0 4px 4px 0; }
+}
+
+/* ---------- control ---------- */
+.hud .cmd { font-family:var(--hud); font-size:21px; letter-spacing:2px; }
+.seg button { font-family:var(--hud); font-size:11px; letter-spacing:.5px; }
+.stick { background:
+    repeating-radial-gradient(circle, transparent 0 18%, rgba(62,230,255,.07) 18% 18.6%),
+    radial-gradient(circle, rgba(62,230,255,.1), rgba(255,255,255,.02) 62%, rgba(255,255,255,.06)); }
+.stick::after { content:""; position:absolute; inset:-6px; border-radius:50%; pointer-events:none;
+  border:2px dashed transparent; transition:border-color .2s; }
+.stick.activo::after { border-color:rgba(62,230,255,.55); animation:girar 6s linear infinite; }
+@keyframes girar { to { transform:rotate(360deg); } }
+.stop { font-family:var(--hud); animation:latido 2.4s ease-in-out infinite; }
+@keyframes latido { 0%, 100% { box-shadow:0 0 0 7px rgba(255,77,94,.12), 0 12px 32px rgba(255,77,94,.45), inset 0 2px 0 rgba(255,255,255,.4); }
+  50% { box-shadow:0 0 0 13px rgba(255,77,94,.06), 0 12px 40px rgba(255,77,94,.65), inset 0 2px 0 rgba(255,255,255,.4); } }
+.btn { border-radius:12px; font-family:var(--hud); font-size:10.5px; letter-spacing:.4px; text-transform:uppercase; }
+.btn::before { content:""; position:absolute; left:14%; right:14%; top:0; height:2px; border-radius:0 0 3px 3px;
+  background:linear-gradient(90deg, transparent, var(--acento), transparent); opacity:.55; }
+.btn.activo::before { opacity:1; box-shadow:0 0 10px var(--acento); }
+.grande, .redondo, .chips button { font-family:var(--hud); font-size:12px; letter-spacing:.6px; }
+.grande.primario, .redondo.primario { background:linear-gradient(135deg, var(--acento), var(--violeta)); }
+.grande:disabled, .redondo:disabled, .mini:disabled { opacity:.35; cursor:not-allowed; }
+.aviso { font-weight:600; border-left:3px solid var(--cian); }
+
+/* ---------- barra de turno (arriba de todas las pestañas) ---------- */
+.sala-barra { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:10px; width:100%; margin:-12px 0 12px;
+  padding:10px 14px; border:0; border-bottom:1px solid var(--borde); background:rgba(10,16,10,.92); cursor:pointer; overflow:hidden;
+  font-family:var(--hud); font-size:11.5px; letter-spacing:.8px; text-align:left; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+.sala-barra .sb-txt { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sala-barra .sb-reloj { font-weight:900; font-size:15px; color:var(--acento); font-variant-numeric:tabular-nums; }
+.sb-prog { position:absolute; left:0; bottom:0; height:3px; width:0; background:var(--acento); box-shadow:0 0 10px var(--acento); transition:width .25s linear; }
+.sala-barra.mio { background:linear-gradient(90deg, rgba(182,255,62,.28), rgba(10,16,10,.92)); color:#fff; }
+.sala-barra.mio .sb-txt { font-weight:900; }
+.sala-barra.pausa { --acento:var(--ambar); }
+.sala-barra.urge { --acento:var(--rojo); animation:urge .5s steps(2) infinite; }
+@keyframes urge { 50% { background:rgba(255,77,94,.3); } }
+
+/* ---------- pestaña Sala ---------- */
+.sala-hero { max-width:560px; margin:0 auto 12px; }
+.sala-hero .grande, .sala-cerrar { margin-top:12px; }
+.sala-seg { margin-top:12px; }
+.sala-centro { justify-content:center; text-align:center; }
+.sala-campo { display:grid; gap:6px; margin-top:12px; font-size:12px; color:var(--suave); font-family:var(--hud); letter-spacing:1px; }
+.sala-campo[hidden] { display:none; }
+.codigo-in { text-transform:uppercase; letter-spacing:8px; font-family:var(--hud); font-size:20px; text-align:center; }
+.sala-qr { text-align:center; }
+.qr { width:min(64vw, 240px); aspect-ratio:1; margin:12px auto; padding:10px; border-radius:14px; background:#fff;
+  display:grid; place-items:center; color:#111; font-size:13px; box-shadow:0 0 0 2px var(--acento), 0 0 30px color-mix(in srgb, var(--acento) 45%, transparent); }
+.qr svg { width:100%; height:100%; display:block; }
+.codigo { font-family:var(--hud); font-weight:900; font-size:38px; letter-spacing:12px; margin:4px 0 10px; padding-left:12px;
+  color:var(--acento); text-shadow:0 0 18px color-mix(in srgb, var(--acento) 70%, transparent); }
+.sala-turno { position:relative; overflow:hidden; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:12px 14px; border-radius:12px;
+  background:rgba(0,0,0,.3); border:1px solid var(--borde); }
+.sala-turno small { display:block; font-family:var(--hud); font-size:9.5px; letter-spacing:2px; color:var(--suave); }
+.sala-turno b { font-size:20px; }
+.sala-turno.mio { border-color:var(--acento); box-shadow:0 0 22px color-mix(in srgb, var(--acento) 35%, transparent); }
+.sala-turno.mio small { color:var(--acento); }
+.sala-turno.pausa { --acento:var(--ambar); }
+.sala-turno.vacio b { color:var(--suave); }
+.sala-reloj { margin-left:auto; font-family:var(--hud); font-weight:900; font-size:30px; color:var(--acento); font-variant-numeric:tabular-nums; }
+.sala-turno + .grande { margin-top:10px; }
+.sala-acciones { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:10px; }
+.sala-acciones .grande { min-height:48px; }
+.sala-fila { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.sala-fila li { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.04); border:1px solid var(--borde); }
+.sala-fila li b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sala-fila li.yo { border-color:var(--acento); box-shadow:0 0 12px color-mix(in srgb, var(--acento) 30%, transparent); }
+.sala-fila li.vacia { color:var(--suave); justify-content:center; }
+.sala-fila .pos { font-family:var(--hud); font-weight:900; color:var(--acento); min-width:22px; }
+.chip { font-family:var(--hud); font-size:9px; letter-spacing:1px; padding:2px 7px; border-radius:999px; border:1px solid var(--acento); color:var(--acento); }
+.chip.mal { border-color:var(--rojo); color:var(--rojo); }
+.mini { border:1px solid var(--borde); background:var(--vidrio2); border-radius:9px; padding:7px 10px; font-family:var(--hud); font-size:10.5px; cursor:pointer; }
+.mini.rojo { border-color:rgba(255,77,94,.5); color:var(--rojo); }
+.sala-cerrar { border-color:rgba(255,77,94,.45); color:var(--rojo); }
+
+/* ---------- hoja de DEMOS ---------- */
+.sala-demosBtn { width:auto; min-height:38px; padding:0 14px; border-color:color-mix(in srgb, var(--lima) 55%, transparent); color:var(--lima); }
+.hoja { position:fixed; inset:0; z-index:45; display:flex; align-items:flex-end; justify-content:center; background:rgba(0,0,0,.55); }
+.hoja[hidden] { display:none; }
+.hoja-caja { width:min(100%, 520px); max-height:78vh; overflow:auto; padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius:20px 20px 0 0; background:rgba(12,16,28,.97); animation:subir .22s ease-out; }
+@keyframes subir { from { transform:translateY(40px); opacity:0; } }
+.demos { list-style:none; margin:10px 0; padding:0; display:grid; gap:8px; }
+.demos li { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid var(--borde); }
+.demos li > div { flex:1; min-width:0; display:grid; gap:2px; }
+.demos li .nota { margin:0; }
+.demos li.corre { border-color:var(--acento); box-shadow:0 0 16px color-mix(in srgb, var(--acento) 35%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .marca, .stop, .stick.activo::after, .sala-barra.urge, .hoja-caja { animation:none; }
+}

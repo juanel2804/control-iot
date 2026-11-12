@@ -9,6 +9,8 @@ Publicada en GitHub Pages: https://juanel2804.github.io/control-iot/
 ## Archivos
 - `index.html` — la aplicación.
 - `arena.js` — pestaña **🕹️ Arena** (solo frontend, mismos comandos y mismo WebSocket).
+- `sala.js` — pestaña **🎟️ Sala** (turnos con QR y panel del administrador) y botón **🎬 DEMOS** del control.
+- `gamer.css` — diseño gamer (fuente HUD, esquinas de neón y un color por pestaña).
 - `manifest.webmanifest`, `sw.js`, `icono-192.png`, `icono-512.png` — instalable como app.
 - `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png` — favicon propio.
 - `docs/` — capturas de la app publicada.
@@ -20,6 +22,13 @@ Publicada en GitHub Pages: https://juanel2804.github.io/control-iot/
 - **Modo baile:** con micrófono (detecta los graves de la música) o con metrónomo.
 - **Misiones con cronómetro, estrellas y ranking:** Slalom, Estaciónate y Llena el camión. El ranking se guarda en cada teléfono.
 - **Calibración:** cuánto tarda un giro de 90° y cuánto dura un lado. Las figuras salen por tiempo porque la excavadora no tiene sensores de posición.
+
+## Sala de turnos (requiere la rama `turnos` del backend)
+- El administrador (con llave) abre la sala, elige el tiempo por turno (30/60/90/120 s) y comparte el **QR**. El QR solo lleva un código de 4 letras (`#sala=ABCD`); la llave **no** sale de su teléfono.
+- Los invitados escriben su nombre y hacen fila. El servidor da el turno con cronómetro y solo obedece a quien lo tiene; al acabar, manda DETENER.
+- El administrador puede pasar al siguiente, dar el turno, sacar, dar +30 s o pausar (en pausa él toma el control). Su STOP siempre pasa.
+- Si a un invitado se le corta la red, conserva su lugar unos segundos con la misma «ficha» del teléfono.
+- **🎬 DEMOS:** lista las DEMO del vehículo (`GET /vehiculos/{id}/demos`) y las lanza por el WebSocket; el invitado solo en su turno.
 
 ## Indicadores (barra superior)
 - **WebSocket WSS:** estado real de la sesión del navegador (En línea / Reconectando). No prueba que el vehículo físico esté conectado.
