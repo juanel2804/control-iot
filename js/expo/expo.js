@@ -239,7 +239,7 @@ setInterval(tic, 250);
 
 const ligaSala = () => {
   const dir = location.pathname.replace(/expo\.html$/, "");
-  return `${location.origin}${dir}${location.search}#sala=${E.codigo}`;
+  return `${location.origin}${dir}${VEHICULO !== 1 ? `?v=${VEHICULO}` : ""}#sala=${E.codigo}`;   // sin copiar otros parámetros
 };
 let qrLib = null;
 const cargarQR = () => qrLib ||= new Promise((ok, mal) => {

@@ -543,7 +543,9 @@ const $ = id => document.getElementById(id);
 const EN_API = /^\/control(\/|$)/.test(location.pathname);          // servida por la propia API en la EC2
 const NUBE = EN_API || /\.github\.io$/.test(location.hostname);     // nube (EC2 o GitHub Pages); si no, la sirve el ESP32 por Wi-Fi
 // URL base de la API en AWS: la misma EC2 cuando se sirve desde ella; en GitHub Pages, la API pública por HTTPS/WSS
-const API_BASE = (EN_API ? location.origin : (new URLSearchParams(location.search).get("api") || "https://100-63-187-92.sslip.io")).replace(/\/+$/, "");
+// Seguridad: ?api= solo acepta servidores de esta lista (si no, una liga maliciosa podría recibir la llave)
+const API_PERMITIDAS = new Set(["https://100-63-187-92.sslip.io"]);
+const API_BASE = EN_API ? location.origin : (() => { let a = null; try { a = new URL(new URLSearchParams(location.search).get("api") || "").origin; } catch {} return API_PERMITIDAS.has(a) ? a : "https://100-63-187-92.sslip.io"; })();
 const RENOVAR_MS = 250;
 const esperar = ms => new Promise(r => setTimeout(r, ms));
 function leer(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } }
