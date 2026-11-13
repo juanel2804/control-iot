@@ -1,0 +1,104 @@
+/* =========================================================================
+   MONITOREO (práctica 4.2) — misma identidad «cabina» de CONTROL (gamer.css).
+   Mobile First: base para celular; @media para tableta/escritorio. Bootstrap 5 aporta grid y utilidades.
+   ========================================================================= */
+
+/* icono propio del botón MONITOREO en el menú (pulso de señal) */
+nav button[data-v="vMonitoreo"] { --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12h4l2.5-6 4 13 3-9 1.8 2H22'/%3E%3C/svg%3E"); }
+nav button { min-width:0; }
+
+/* foco visible en toda la app (teclado), sin afectar el toque */
+:where(button, a, summary, [tabindex]):focus-visible { outline:3px solid var(--holo, #29e6ff); outline-offset:2px; }
+
+.mon { font-family:var(--hud, system-ui); }
+.mon p, .mon h2, .mon h3, .mon dl, .mon dd, .mon ul, .mon ol { margin:0; }
+.mon-titulo { font-family:var(--estencil, inherit); font-weight:400; font-size:20px; letter-spacing:1.5px; color:var(--maq, #ffc400); }
+.mon-vehiculo { font-size:13px; color:var(--suave, #93a2b8); margin-top:2px; }
+.mon-sub { font-size:14px; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--texto, #eaf2ff); margin-bottom:10px; }
+.mon-nota { font-size:12px; line-height:1.45; color:var(--suave, #93a2b8); margin-top:10px; }
+.mon .tarjeta { margin-bottom:0; }
+.mon .row > * + * .tarjeta, .mon .col-12 > .tarjeta + .tarjeta, .mon .col-12 > .tarjeta + details { margin-top:12px; }
+
+.mon-boton { min-height:44px; padding:8px 14px; font:700 13px var(--hud, inherit); letter-spacing:.5px; cursor:pointer;
+  color:var(--tinta, #0b0d12); background:linear-gradient(180deg, var(--maq, #ffc400), var(--maq2, #ff8a00)); border:0;
+  clip-path:polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+.mon-boton:active { filter:brightness(.9); }
+
+.mon-sync { font-size:12.5px; padding:7px 10px; margin-bottom:12px; border-left:4px solid var(--suave, #93a2b8); background:rgba(0,0,0,.35); }
+.mon-sync[data-nivel="ok"] { border-left-color:var(--lima, #b6ff3e); }
+.mon-sync[data-nivel="espera"] { border-left-color:var(--holo, #29e6ff); }
+.mon-sync[data-nivel="mal"] { border-left-color:var(--alarma, #ff3b4e); color:#ffd5d9; }
+
+/* ---------- tarjeta del último movimiento ---------- */
+.mon-ultimo .mon-cmd { font-family:var(--estencil, inherit); font-size:clamp(26px, 8vw, 40px); line-height:1.05; color:var(--maq, #ffc400);
+  text-shadow:0 0 18px rgba(255,196,0,.35); word-break:break-word; }
+.mon-ultimo.demo .mon-cmd { color:var(--holo, #29e6ff); text-shadow:0 0 18px rgba(41,230,255,.35); }
+.mon-ultimo.viejo .mon-cmd { color:var(--suave, #93a2b8); text-shadow:none; }
+.mon-detalle { font-size:13px; color:var(--texto, #eaf2ff); min-height:1.3em; margin-top:4px; }
+.mon-ultimo.viejo .mon-detalle { color:#ffd27a; }
+.mon-datos { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; margin-top:12px; }
+.mon-datos > div { background:rgba(0,0,0,.35); border:1px solid var(--borde, rgba(160,190,230,.17)); padding:6px 9px; min-width:0; }
+.mon-datos dt { font-size:10.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--suave, #93a2b8); }
+.mon-datos dd { font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.mon-datos > div:last-child { grid-column:1 / -1; }
+.mon-datos > div:last-child dd { font-size:12.5px; font-weight:600; }
+.mon-chips { list-style:none; padding:0; display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.mon-chips li { font-size:11.5px; font-weight:600; padding:4px 8px; border:1px solid var(--borde, rgba(160,190,230,.17)); background:rgba(0,0,0,.35); }
+.mon-chips .chip-ok { border-color:rgba(182,255,62,.55); color:#d9ffa0; }
+.mon-chips .chip-espera { border-color:rgba(41,230,255,.55); color:#bff6ff; }
+.mon-chips .chip-info { color:var(--texto, #eaf2ff); }
+.mon-chips .chip-aviso { border-color:rgba(255,196,0,.6); color:#ffe08a; }
+
+/* ---------- indicadores ---------- */
+.mon-ind-lista { list-style:none; padding:0; display:grid; gap:8px; }
+.mon-ind-lista li { display:grid; grid-template-columns:auto 1fr; column-gap:8px; align-items:center; padding:7px 9px;
+  background:rgba(0,0,0,.32); border-left:4px solid var(--suave, #93a2b8); }
+.mon-ind-lista li[data-nivel="ok"] { border-left-color:var(--lima, #b6ff3e); }
+.mon-ind-lista li[data-nivel="mal"] { border-left-color:var(--alarma, #ff3b4e); }
+.mon-ind-lista b { font-size:12.5px; }
+.mon-ind-est { grid-column:2; font-size:13px; font-weight:700; }
+.mon-ind-lista li[data-nivel="ok"] .mon-ind-est { color:#d9ffa0; }
+.mon-ind-lista li[data-nivel="mal"] .mon-ind-est { color:#ffb3bb; }
+.mon-ind-det { grid-column:1 / -1; font-size:11px; color:var(--suave, #93a2b8); margin-top:3px; }
+.mon-punto { width:10px; height:10px; border-radius:50%; background:var(--suave, #93a2b8); grid-row:1; }
+li[data-nivel="ok"] > .mon-punto { background:var(--lima, #b6ff3e); box-shadow:0 0 8px var(--lima, #b6ff3e); }
+li[data-nivel="mal"] > .mon-punto { background:var(--alarma, #ff3b4e); box-shadow:0 0 8px var(--alarma, #ff3b4e); }
+
+/* ---------- tabla de 10 movimientos (sin desbordar la página) ---------- */
+.mon-hist-meta { font-size:12px; color:var(--suave, #93a2b8); }
+.mon-tabla-caja { max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.mon-tabla { width:100%; border-collapse:collapse; font-size:13.5px; font-variant-numeric:tabular-nums; }
+.mon-tabla th { text-align:left; font-size:11px; letter-spacing:.8px; text-transform:uppercase; color:var(--maq, #ffc400);
+  padding:8px 6px; border-bottom:2px solid rgba(255,196,0,.45); white-space:nowrap; }
+.mon-tabla td { padding:9px 6px; border-bottom:1px solid rgba(160,190,230,.12); }
+.mon-tabla tbody tr:nth-child(even):not(.mon-vacia):not(.mon-error) { background:rgba(160,190,230,.045); }
+.mon-tabla .c-num { width:2.2em; color:var(--suave, #93a2b8); font-weight:700; }
+.mon-tabla .c-mov { font-weight:700; overflow-wrap:anywhere; }
+.mon-tabla .c-id, .mon-tabla .c-org { color:var(--suave, #93a2b8); font-size:12px; }
+.mon-tabla tr.nuevo td { animation:monNuevo 2.4s ease-out; }
+.mon-tabla tr.nuevo .c-mov::after { content:" · nuevo"; font-size:10.5px; font-weight:600; color:var(--holo, #29e6ff); }
+@keyframes monNuevo { from { background:rgba(41,230,255,.28); } to { background:transparent; } }
+.mon-vacia td, .mon-error td { text-align:center; color:var(--suave, #93a2b8); padding:18px 6px; }
+.mon-error td { color:#ffb3bb; }
+
+/* ---------- bitácora de eventos ---------- */
+.mon-eventos summary { font-size:13px; font-weight:700; min-height:44px; display:flex; align-items:center; gap:6px; cursor:pointer; }
+.mon-ev-lista { padding-left:0; list-style:none; max-height:240px; overflow:auto; font-size:12px; }
+.mon-ev-lista li { display:flex; gap:8px; padding:4px 0; border-bottom:1px solid rgba(160,190,230,.1); }
+.mon-ev-lista time { color:var(--holo, #29e6ff); font-variant-numeric:tabular-nums; flex:none; }
+.ev-veces { color:var(--suave, #93a2b8); }
+
+/* ---------- tableta y escritorio ---------- */
+@media (min-width: 576px) {
+  .mon-datos { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+  .mon-titulo { font-size:24px; }
+}
+@media (min-width: 992px) {
+  .mon .col-lg-5 > .tarjeta + .tarjeta { margin-top:16px; }
+  .mon-tabla { font-size:14px; }
+}
+/* celular horizontal: el menú es un riel lateral; se aprovecha el ancho */
+@media (orientation: landscape) and (max-height: 600px) {
+  .mon-ultimo .mon-cmd { font-size:30px; }
+}
+@media (prefers-reduced-motion: reduce) { .mon-tabla tr.nuevo td { animation:none; } }

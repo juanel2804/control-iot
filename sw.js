@@ -1,7 +1,10 @@
 // Service worker de la app "Excavadora de Juan": permite instalarla y abrirla rápido.
 // Solo guarda la propia página; la API y el WebSocket siempre van a la red.
-const CACHE = "excavadora-v12";
-const ARCHIVOS = ["./", "./index.html", "./gamer.css", "./gamer.js", "./sala.js", "./arena.js", "./manifest.webmanifest", "./icono-192.png", "./icono-512.png"];
+const CACHE = "excavadora-v13";
+const MONITOREO = ["config", "fechas", "validar", "api", "canal", "conectividad", "ultimo", "historial", "eventos", "sincronizador", "app"]
+  .map(m => `./js/monitoreo/${m}.js`);
+const ARCHIVOS = ["./", "./index.html", "./gamer.css", "./gamer.js", "./sala.js", "./arena.js", "./css/monitoreo.css", ...MONITOREO,
+  "./manifest.webmanifest", "./icono-192.png", "./icono-512.png"];
 const ALCANCE = new URL("./", self.location).pathname;
 
 self.addEventListener("install", e => {

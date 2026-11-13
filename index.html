@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Excavadora de Juan · Control IoT 4.1</title>
-<meta name="description" content="Control de la excavadora IoT: joysticks, 12 botones, IA, voz y gestos.">
+<title>Excavadora de Juan · Control y Monitoreo IoT 4.2</title>
+<meta name="description" content="Control y monitoreo en tiempo real de la excavadora IoT: joysticks, 12 botones, DEMO, último movimiento e historial de RDS.">
 <meta name="theme-color" content="#05070b">
 <meta name="color-scheme" content="dark">
 <meta name="mobile-web-app-capable" content="yes">
@@ -208,6 +208,12 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700;800&family=Saira+Stencil+One&display=swap">
 <link rel="stylesheet" href="gamer.css">
+<!-- Práctica 4.2 · MONITOREO: Bootstrap 5 (solo grid y utilidades, sin reboot para no alterar CONTROL) + estilos del módulo -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap-grid.min.css"
+      integrity="sha384-fmZzkB5FaSyz2fHsFdE3/hJZL5DoXoksqtGmj/ceh67vi7uY+MXjBITJATdQsrMM" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap-utilities.min.css"
+      integrity="sha384-Q51rgXP88lzrflg5bs/XnX/2BpyaSqnUXdNLptG3K+bDUcIxjjls1yD3RZIKZE+o" crossorigin="anonymous">
+<link rel="stylesheet" href="css/monitoreo.css">
 <!-- Pantalla de arranque (gamer.js): se esconde la app hasta que aparece; si algo falla, se muestra sola a los 2.5 s -->
 <script>try { if (!sessionStorage.getItem("intro_vista")) { document.documentElement.classList.add("arranque"); setTimeout(() => document.documentElement.classList.remove("arranque"), 2500); } } catch {}</script>
 </head>
@@ -265,6 +271,88 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
     <div id="modoBotones" class="botonera" hidden>
       <div class="rejilla" id="rejilla" style="margin-top:0"></div>
       <button class="stop barra" data-stop>STOP</button>
+    </div>
+  </section>
+
+  <!-- ============================ MONITOREO (práctica 4.2) ============================
+       Lógica en js/monitoreo/*.js (módulos ES6). REST: carga inicial y resincronización.
+       WSS: comparte la conexión de CONTROL y dispara las actualizaciones en vivo. -->
+  <section id="vMonitoreo" class="mon" hidden aria-labelledby="monTitulo">
+    <div class="container-fluid px-0">
+      <div class="mon-cabeza d-flex flex-wrap align-items-center gap-2 mb-3">
+        <div class="me-auto">
+          <h2 id="monTitulo" class="mon-titulo">Monitoreo en tiempo real</h2>
+          <p class="mon-vehiculo"><span id="monVehiculo">Vehículo —</span> · <span id="monIdVehiculo">ID —</span></p>
+        </div>
+        <button type="button" class="mon-boton" id="monActualizar">⟳ Resincronizar</button>
+      </div>
+      <p class="mon-sync" id="monSync" role="status" aria-live="polite">Cargando…</p>
+
+      <div class="row g-3">
+        <!-- Último movimiento / estado reportado -->
+        <div class="col-12 col-lg-5">
+          <article class="tarjeta vidrio mon-ultimo" id="monUltimo" aria-labelledby="monUltimoTit" aria-busy="true">
+            <h3 class="mon-sub" id="monUltimoTit">Último movimiento reportado</h3>
+            <p class="mon-cmd" id="monCmd">Cargando…</p>
+            <p class="mon-detalle" id="monDetalle"></p>
+            <dl class="mon-datos">
+              <div><dt>Fecha</dt><dd id="monFecha">—</dd></div>
+              <div><dt>Hora</dt><dd id="monHora">—</dd></div>
+              <div><dt>Código</dt><dd id="monCodigo">—</dd></div>
+              <div><dt>Fuente</dt><dd id="monFuente">—</dd></div>
+            </dl>
+            <ul class="mon-chips" id="monChips" aria-label="Qué está comprobado de este movimiento"></ul>
+            <p class="mon-nota">«Reportado» no es lo mismo que «ejecutado»: un evento WSS confirma que el servidor lo publicó,
+              no que el motor físico se movió.</p>
+          </article>
+
+          <!-- Detalle de los tres indicadores (los mismos de la barra superior) -->
+          <article class="tarjeta vidrio mon-ind" aria-labelledby="monIndTit">
+            <h3 class="mon-sub" id="monIndTit">Conectividad</h3>
+            <ul class="mon-ind-lista">
+              <li data-ind="ws"><span class="mon-punto" aria-hidden="true"></span><b>WebSocket WSS</b><span class="mon-ind-est">—</span><small class="mon-ind-det"></small></li>
+              <li data-ind="api"><span class="mon-punto" aria-hidden="true"></span><b>Servidor AWS · API de 21 servicios</b><span class="mon-ind-est">—</span><small class="mon-ind-det">GET /salud cada 15 s (5 s de espera máx.). Un /salud correcto no garantiza las 21 operaciones.</small></li>
+              <li data-ind="rds"><span class="mon-punto" aria-hidden="true"></span><b>Amazon RDS</b><span class="mon-ind-est">—</span><small class="mon-ind-det"></small></li>
+            </ul>
+            <p class="mon-nota">«WSS en línea» es la sesión de este navegador con el servidor; no prueba que el ESP32 esté conectado.</p>
+          </article>
+        </div>
+
+        <!-- Últimos 10 movimientos individuales persistidos en RDS -->
+        <div class="col-12 col-lg-7">
+          <article class="tarjeta vidrio mon-hist" aria-labelledby="monHistTit">
+            <div class="d-flex flex-wrap align-items-baseline gap-2">
+              <h3 class="mon-sub me-auto" id="monHistTit">Últimos 10 movimientos individuales</h3>
+              <span class="mon-hist-meta" id="monHistMeta">—</span>
+            </div>
+            <div class="mon-tabla-caja">
+              <table class="mon-tabla" id="monTabla" aria-describedby="monHistNota">
+                <caption class="visually-hidden">Movimientos individuales guardados en Amazon RDS, del más reciente al más antiguo</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" class="c-num">#</th>
+                    <th scope="col">Movimiento</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Hora</th>
+                    <th scope="col" class="c-id d-none d-sm-table-cell">ID</th>
+                    <th scope="col" class="c-org d-none d-md-table-cell">Origen</th>
+                  </tr>
+                </thead>
+                <tbody id="monFilas" aria-live="polite" aria-relevant="additions text">
+                  <tr class="mon-vacia"><td colspan="6">Cargando historial…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="mon-nota" id="monHistNota">Fuente: GET /vehiculos/{id}/historial (Amazon RDS). El # es solo visual; las filas que salen
+              de la tabla siguen guardadas en RDS. Los pasos de una DEMO no se guardan en este historial.</p>
+          </article>
+
+          <details class="tarjeta vidrio mon-eventos">
+            <summary>Eventos WSS recibidos <span id="monEvCuenta">(0)</span></summary>
+            <ol class="mon-ev-lista" id="monEventos" aria-live="off"></ol>
+          </details>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -431,6 +519,7 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
 
 <nav>
   <button data-v="vControl" aria-current="page"><b>🎮</b>Control</button>
+  <button data-v="vMonitoreo" data-nube><b>📡</b>Monitoreo</button>
   <button data-v="vIA" data-nube><b>✨</b>IA</button>
   <button data-v="vGestos" data-nube><b>✋</b>Gestos</button>
   <button data-v="vArena" data-nube><b>🕹️</b>Arena</button>
@@ -485,6 +574,16 @@ const vehiculo = Number(new URLSearchParams(location.search).get("v") || leer("i
 let pulso = Number(leer("pulso", "500")), modo = leer("modo", "sticks");
 let ws = null, autorizado = !NUBE, ultimaTele = 0, finHud = null;
 
+/* Práctica 4.2: UNA sola conexión WSS compartida por CONTROL y MONITOREO.
+   conectar() avisa por este canal (abriendo / abierto / cerrado / mensaje) y los módulos de MONITOREO
+   escuchan aquí, sin abrir otro WebSocket. window.IOT es la configuración común (sin llaves ni secretos). */
+const canalWS = new EventTarget();
+const avisarCanal = (tipo, detalle) => canalWS.dispatchEvent(new CustomEvent(tipo, { detail: detalle }));
+window.IOT = Object.freeze({ API_BASE, vehiculo, NUBE, canal: canalWS, estadoWS: () => ws ? ws.readyState : 3 });
+let intentosWS = 0;   // reconexión con espera progresiva: 1 s, 2 s, 4 s y después cada 8 s
+// MONITOREO solo escucha (no necesita la llave): estando ahí no se manda al usuario a Ajustes
+function monitoreoVisible() { const s = document.getElementById("vMonitoreo"); return !!s && !s.hidden; }
+
 /* ============================ navegación ============================ */
 document.querySelectorAll("nav button").forEach(b => {
   if (!NUBE && b.hasAttribute("data-nube")) b.hidden = true;   // IA y cámara necesitan internet y HTTPS
@@ -511,13 +610,23 @@ function pintarModo() { $("modoSticks").hidden = modo !== "sticks"; $("modoBoton
 /* ============================ enlace ============================ */
 function conectar() {
   ws = new WebSocket(NUBE ? `${API_BASE.replace(/^http/, "ws")}/ws/vehiculos/${vehiculo}` : `ws://${location.hostname}:81/`);
+  if (NUBE) led("ledEnlace", intentosWS ? "WebSocket · Reconectando" : "WebSocket · Conectando", intentosWS ? "mal" : "");
+  avisarCanal("abriendo", { intento: intentosWS });
   ws.onopen = () => {
+    const reconexion = intentosWS > 0; intentosWS = 0;
     led("ledEnlace", NUBE ? "WebSocket · En línea" : "Enlace", "ok");
-    if (NUBE) { const k = leer("iot_api_key", ""); if (k) ws.send(JSON.stringify({ tipo: "auth", llave: k })); else pedirLlave(); }
+    avisarCanal("abierto", { reconexion });
+    if (NUBE) { const k = leer("iot_api_key", ""); if (k) ws.send(JSON.stringify({ tipo: "auth", llave: k })); else if (!monitoreoVisible()) pedirLlave(); }
   };
-  ws.onclose = () => { led("ledEnlace", NUBE ? "WebSocket · Reconectando" : "Sin enlace", "mal"); detenerTodo(false); setTimeout(conectar, 1500); };
+  ws.onclose = e => {
+    const espera = Math.min(8000, 1000 * 2 ** Math.min(intentosWS, 3)); intentosWS++;
+    led("ledEnlace", NUBE ? (intentosWS > 3 || !navigator.onLine ? `WebSocket · Desconectado (reintento en ${Math.round(espera / 1000)} s)` : "WebSocket · Reconectando") : "Sin enlace", "mal");
+    avisarCanal("cerrado", { codigo: e.code, espera, intentos: intentosWS });
+    detenerTodo(false); setTimeout(conectar, espera);
+  };
   ws.onmessage = e => {
     let m; try { m = JSON.parse(e.data); } catch { return; }
+    if (NUBE && m && typeof m === "object") avisarCanal("mensaje", m);
     if (!NUBE) {
       if (m.t === "pong") led("ledPing", `${Math.round(performance.now() - m.p)} ms`, "ok");
       if (m.t === "estado") { hud(m.c); tele({ rssi: m.rssi, ip: m.ip }); }
@@ -525,7 +634,7 @@ function conectar() {
     }
     switch (m.tipo) {
       case "pong": if (m.p != null) led("ledPing", `${Math.round(performance.now() - m.p)} ms`, "ok"); break;
-      case "auth": autorizado = m.ok; if (!m.ok) { led("ledEnlace", "WebSocket · Llave inválida", "mal"); pedirLlave(); } break;
+      case "auth": autorizado = m.ok; if (!m.ok) { led("ledEnlace", "WebSocket · Llave inválida", "mal"); if (!monitoreoVisible()) pedirLlave(); } break;
       case "estado_inicial": if (m.estado) hud(m.estado.comando || "DETENER"); if (m.telemetria) tele(m.telemetria); break;
       case "control": hud(m.comando, m.ms); break;
       case "movimiento": hud(m.comando); break;
@@ -540,7 +649,9 @@ function mandar(c, ms) {
   if (NUBE && !autorizado) { pedirLlave(); return; }
   ws.send(JSON.stringify(NUBE ? { tipo: "control", c, ms } : { c, ms }));
 }
-// API: GET /salud cada 15 s (solo prueba que el servicio de salud responde, no las 21 operaciones). RDS: el backend no expone diagnóstico → «Sin verificar».
+// API: GET /salud cada 15 s (solo prueba que el servicio de salud responde, no las 21 operaciones).
+// RDS: lo marca js/monitoreo/conectividad.js con la respuesta real del backend a consultas que ejecutan SP en RDS
+// (200 → Disponible; 503 «base de datos no disponible» → No disponible; sin respuesta → Sin verificar).
 async function vigilarApi() {
   if (!NUBE || document.hidden) return;
   const c = new AbortController(), t = setTimeout(() => c.abort(), 5000);
@@ -1379,5 +1490,7 @@ revisarCopiloto();
 <script src="gamer.js"></script>
 <script src="sala.js"></script>
 <script src="arena.js"></script>
+<!-- Práctica 4.2 · MONITOREO (módulos ES6; usa window.IOT y el WebSocket compartido de arriba) -->
+<script type="module" src="js/monitoreo/app.js"></script>
 </body>
 </html>
