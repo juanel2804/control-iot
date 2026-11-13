@@ -79,6 +79,24 @@ En `index.html` solo se agregaron el botón **Monitoreo**, la sección `#vMonito
 5. Corta la red (o reinicia la API) y vuelve: el WSS pasa a «Reconectando» y luego a «En línea», y la tabla se recupera por REST.
 6. Lanza una DEMO: la tarjeta muestra «DEMO #n · paso x/y», pero la tabla no cambia.
 
+## Pantalla de la expo (`expo.html`)
+Liga aparte para la tablet o el proyector: https://juanel2804.github.io/control-iot/expo.html (no está en el menú).
+- **Izquierda:** sala de turnos para el público. Se elige el tiempo por turno (30/60/90/120 s) y aparecen el QR grande y el código, quién maneja con su cronómetro y la fila.
+  Botones: pausar/reanudar, siguiente, +30 s, sacar de la fila y cerrar (doble toque). La tablet entra como administrador con la llave guardada en ese dispositivo; el QR solo lleva `#sala=CÓDIGO`.
+- **Derecha, «Así viaja cada orden»:** diagrama Celular → AWS EC2 → Amazon RDS / ESP32 → motores, animado **solo con eventos reales** del WebSocket.
+  Muestra quién mandó la orden, el `INSERT` en RDS con el ID real del historial, los pasos de DEMO («estado ✓ · historial ✗») y la señal del ESP32.
+  Si el ESP32 no reporta telemetría, la orden se marca «sin señal: no llegó» en lugar de fingir el movimiento.
+- **Indicadores:** WSS, API AWS, RDS y ESP32 (telemetría de los últimos 12 s).
+- Archivos: `expo.html`, `css/expo.css`, `js/expo/expo.js` (sala, WSS e historial) y `js/expo/diagrama.js` (animación SVG). Reutiliza `js/monitoreo/api.js`, `config.js` y `fechas.js`.
+
+## Administración (Ajustes, solo con la llave)
+Usa los servicios REST que ya existen (sin cambios en el backend):
+- **Vehículos:** listar, crear, editar (incluye activo/inactivo) y eliminar.
+- **Comandos** del catálogo de cada vehículo: crear, editar y eliminar.
+- **DEMOs:** crear, editar y eliminar; agregar, editar y quitar pasos (comando, orden, duración y pausa); ejecutar y cancelar.
+- Eliminar pide doble toque. Los invitados (sin llave) no ven esta sección. Archivos: `js/admin/admin.js` y `css/admin.css`.
+- Usuarios y permisos: la base no tiene tabla de usuarios. Los roles son administrador (con llave) e invitado (QR con turno, controlado por el servidor).
+
 ## Indicadores (barra superior, visibles en todas las vistas)
 - **WebSocket WSS:** estado real de la sesión del navegador (En línea / Conectando-Reconectando / Desconectado). No prueba que el vehículo físico esté conectado.
 - **API AWS · 21 servicios:** `GET /salud` cada 15 s, con 5 s de espera máxima (Comprobando / Disponible / No disponible). Solo prueba que el servicio de salud responde, no las 21 operaciones.

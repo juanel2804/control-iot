@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Excavadora de Juan · Pantalla de la expo</title>
+<meta name="description" content="Pantalla para proyectar: sala de turnos con QR y cómo viaja cada orden de la excavadora IoT por AWS y RDS, en vivo.">
+<meta name="theme-color" content="#05070b">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icono-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700;800&family=Saira+Stencil+One&display=swap">
+<link rel="stylesheet" href="css/expo.css">
+</head>
+<body>
+<header class="ex-cab">
+  <div class="ex-marca">EXCAVADORA <span>JUAN</span> <small>EN VIVO</small></div>
+  <ul class="ex-leds" aria-label="Estado de las conexiones">
+    <li id="exWs" data-n="espera"><i></i><span>WebSocket · Conectando</span></li>
+    <li id="exApi" data-n="espera"><i></i><span>API AWS · Comprobando</span></li>
+    <li id="exRds" data-n="espera"><i></i><span>RDS · Sin verificar</span></li>
+    <li id="exEsp" data-n="mal"><i></i><span>ESP32 · Sin señal</span></li>
+  </ul>
+  <time class="ex-reloj" id="exReloj">--:--</time>
+</header>
+
+<main class="ex-main">
+  <!-- =================== IZQUIERDA: sala de turnos =================== -->
+  <section class="ex-panel ex-sala" aria-labelledby="exSalaTit">
+    <h1 id="exSalaTit" class="ex-tit">Escanea y maneja</h1>
+
+    <div id="exSinLlave" class="ex-llave" hidden>
+      <p>Esta pantalla administra la sala: pon la llave de control (se guarda solo en este dispositivo).</p>
+      <form id="exFormLlave"><input id="exLlave" type="password" autocomplete="off" placeholder="X-API-Key" aria-label="Llave de control">
+        <button type="submit" class="ex-btn primario">Entrar</button></form>
+    </div>
+
+    <div id="exCerrada" hidden>
+      <p class="ex-sub">La sala está cerrada. Elige cuánto dura cada turno y ábrela:</p>
+      <div class="ex-tiempos" id="exTiempos">
+        <button type="button" class="ex-btn" data-s="30">30 s</button>
+        <button type="button" class="ex-btn primario" data-s="60">60 s</button>
+        <button type="button" class="ex-btn" data-s="90">90 s</button>
+        <button type="button" class="ex-btn" data-s="120">120 s</button>
+      </div>
+    </div>
+
+    <div id="exAbierta" hidden>
+      <div class="ex-qr-fila">
+        <div class="ex-qr" id="exQR" role="img" aria-label="Código QR para entrar a la sala"></div>
+        <div class="ex-codigo">
+          <span>Código</span>
+          <b id="exCodigo">----</b>
+          <small id="exLiga"></small>
+        </div>
+      </div>
+      <div class="ex-turno" id="exTurno">
+        <span class="ex-etq">Maneja ahora</span>
+        <b id="exTurnoNombre">Nadie todavía</b>
+        <div class="ex-barra"><i id="exTurnoBarra"></i></div>
+        <span class="ex-crono" id="exTurnoCrono"></span>
+      </div>
+      <div class="ex-fila">
+        <span class="ex-etq">En la fila <b id="exFilaN">0</b></span>
+        <ol id="exFila"></ol>
+      </div>
+      <div class="ex-ctrl" role="group" aria-label="Control de la sala">
+        <button type="button" class="ex-btn" data-acc="pausar" id="exPausa">⏸ Pausar</button>
+        <button type="button" class="ex-btn" data-acc="siguiente">⏭ Siguiente</button>
+        <button type="button" class="ex-btn" data-acc="mas">＋30 s</button>
+        <button type="button" class="ex-btn peligro" data-acc="cerrar" id="exCerrar">Cerrar sala</button>
+      </div>
+    </div>
+    <p class="ex-aviso" id="exAviso" role="status" aria-live="polite"></p>
+  </section>
+
+  <!-- =================== DERECHA: así funciona, en vivo =================== -->
+  <section class="ex-panel ex-flujo" aria-labelledby="exFlujoTit">
+    <div class="ex-flujo-cab">
+      <h2 id="exFlujoTit" class="ex-tit">Así viaja cada orden</h2>
+      <ul class="ex-leyenda" aria-label="Colores del diagrama">
+        <li class="l-mov">Movimiento</li><li class="l-rds">Guardado en RDS</li><li class="l-demo">DEMO</li><li class="l-tele">Señal del ESP32</li>
+      </ul>
+    </div>
+    <svg id="exSvg" class="ex-svg" viewBox="0 0 1000 520" role="img" aria-labelledby="exSvgDesc">
+      <desc id="exSvgDesc">Diagrama: el celular del jugador manda la orden por WebSocket seguro a la API en AWS; la API la guarda en Amazon RDS y la reenvía al ESP32, que mueve los motores.</desc>
+      <defs>
+        <filter id="brillo" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- cables -->
+      <path id="cCelApi"  class="cable" d="M190 130 L410 130"/>
+      <path id="cApiRds"  class="cable" d="M590 130 L810 130"/>
+      <path id="cApiEsp"  class="cable" d="M500 190 L500 330"/>
+      <path id="cEspMot"  class="cable" d="M590 390 L810 390"/>
+      <path id="cEspApi"  class="cable fino" d="M470 330 L470 190"/>
+      <text class="cable-txt" x="300" y="162">WSS cifrado (TLS)</text>
+      <text class="cable-txt" x="700" y="162">CALL stored procedure</text>
+      <text class="cable-txt izq" x="520" y="265">WSS → ESP32</text>
+      <text class="cable-txt" x="700" y="422">SN74HC595 · salidas Q0–Q7</text>
+      <!-- nodos -->
+      <g id="nCel" class="nodo" transform="translate(100 130)"><rect x="-90" y="-60" width="180" height="120"/><text class="ico" y="-8">📱</text><text class="nom" y="30">Celular</text><text class="det" id="dCel" y="50">del jugador</text></g>
+      <g id="nApi" class="nodo" transform="translate(500 130)"><rect x="-90" y="-60" width="180" height="120"/><text class="ico" y="-8">☁️</text><text class="nom" y="30">AWS EC2</text><text class="det" id="dApi" y="50">FastAPI · 21 APIs</text></g>
+      <g id="nRds" class="nodo" transform="translate(900 130)"><rect x="-90" y="-60" width="180" height="120"/><text class="ico" y="-8">🗄️</text><text class="nom" y="30">Amazon RDS</text><text class="det" id="dRds" y="50">MySQL</text></g>
+      <g id="nEsp" class="nodo" transform="translate(500 390)"><rect x="-90" y="-60" width="180" height="120"/><text class="ico" y="-8">🔌</text><text class="nom" y="30">ESP32</text><text class="det" id="dEsp" y="50">sin señal</text></g>
+      <g id="nMot" class="nodo" transform="translate(900 390)"><rect x="-90" y="-60" width="180" height="120"/><text class="ico" y="-8">🚜</text><text class="nom" y="30">Motores</text><text class="det" id="dMot" y="50">orugas · cabina · pala</text></g>
+      <g id="capaPaquetes"></g>
+    </svg>
+    <div class="ex-ultimo">
+      <div><span class="ex-etq">Última orden</span><b id="exUltCmd">—</b><small id="exUltDet"></small></div>
+      <div class="ex-hist"><span class="ex-etq">Guardado en RDS (historial)</span><ol id="exHist"></ol></div>
+    </div>
+    <p class="ex-nota">Todo lo que se mueve aquí es un evento real del servidor. «Enviado al ESP32» no confirma que el motor se movió:
+      eso solo lo puede reportar el propio ESP32.</p>
+  </section>
+</main>
+<footer class="ex-pie">Desarrollado por Juan Elpidio López García · 2026 · Implementación de soluciones IoT</footer>
+
+<script>
+/* Misma configuración que index.html (sin secretos): URL de la API y vehículo. El WebSocket lo abre js/expo/expo.js. */
+(() => {
+  const q = new URLSearchParams(location.search);
+  const EN_API = /^\/control(\/|$)/.test(location.pathname);
+  const API_BASE = (EN_API ? location.origin : (q.get("api") || "https://100-63-187-92.sslip.io")).replace(/\/+$/, "");
+  let v = 1; try { v = Number(q.get("v") || localStorage.getItem("iot_vehiculo") || "1"); } catch {}
+  const canal = new EventTarget();
+  window.EXPO = { ws: null };
+  window.IOT = Object.freeze({ API_BASE, vehiculo: v, NUBE: true, canal, estadoWS: () => window.EXPO.ws ? window.EXPO.ws.readyState : 3 });
+})();
+</script>
+<script type="module" src="js/expo/expo.js"></script>
+</body>
+</html>
