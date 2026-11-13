@@ -29,7 +29,7 @@ function revisarEsp() {
   const vivo = Date.now() - E.ultimaTele < 12000;
   led("exEsp", vivo ? "ESP32 · En línea" : "ESP32 · Sin señal", vivo ? "ok" : "mal");
   estadoNodo("nEsp", vivo ? "ok" : "mal"); estadoNodo("nMot", vivo ? "" : "mal");
-  if (!vivo) detalle("dEsp", "sin señal");
+  if (!vivo && Date.now() - (E.notaEsp || 0) > 4000) detalle("dEsp", "sin señal");   // deja leer «no llegó» unos segundos
 }
 
 /* ============================ WebSocket (con espera progresiva) ============================ */
@@ -138,6 +138,7 @@ function llegaAlEsp(comando, clase = "mov") {
     viajar("cEspMot", clase, NOMBRE(comando), 450).then(() => { pulso("nMot", clase); });
   } else {
     detalle("dEsp", "sin señal: no llegó");                // no se finge que el carro se movió
+    E.notaEsp = Date.now();
   }
 }
 function telemetria(t, animar) {
