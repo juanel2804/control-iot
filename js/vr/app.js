@@ -145,7 +145,8 @@ addEventListener("keyup", e => {
 addEventListener("blur", () => { if (teclas.size) { teclas.clear(); E.soltar(); } });
 
 // llave y micrófono
-$("llave").value = E.llave();
+$("llave").value = E.llaveDeLiga || E.llave();
+if (E.llaveDeLiga) E.aviso("La liga trae otra llave: revísala y oprime Guardar para usarla", 8000);
 $("btnLlave").addEventListener("click", () => { E.guardar("iot_api_key", $("llave").value.trim()); E.reautenticar(); E.aviso("Llave guardada"); });
 $("btnMic").addEventListener("click", async () => {
   const ok = await prepararMicro(); const s = await revisarServicio();

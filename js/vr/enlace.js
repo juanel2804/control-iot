@@ -12,10 +12,13 @@ const qs = new URLSearchParams(location.search);
 export function leer(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } }
 export function guardar(k, v) { try { localStorage.setItem(k, v); } catch {} }
 
-// Liga privada con la llave (#k=…): se guarda y se borra de la barra (el # nunca llega al servidor)
+// Liga privada con la llave (#k=…): se borra de la barra (el # nunca llega al servidor).
+// Solo se guarda si no había llave; si ya había otra, NO se reemplaza sola: queda en el campo para que la guardes tú.
+export let llaveDeLiga = "";
 if (location.hash.startsWith("#k=")) {
-  guardar("iot_api_key", decodeURIComponent(location.hash.slice(3)));
+  try { llaveDeLiga = decodeURIComponent(location.hash.slice(3)).trim(); } catch {}
   history.replaceState(null, "", location.pathname + location.search);
+  if (llaveDeLiga && !leer("iot_api_key", "")) { guardar("iot_api_key", llaveDeLiga); llaveDeLiga = ""; }
 }
 
 // Seguridad: ?api= solo acepta servidores de la lista (la llave no puede irse a otro dominio)
