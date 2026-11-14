@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Excavadora XR · Realidad virtual y mixta</title>
+<meta name="description" content="Control de la excavadora IoT en realidad mixta y realidad virtual con Meta Quest (WebXR).">
+<meta name="theme-color" content="#05070b">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700;800&family=Saira+Stencil+One&display=swap">
+<link rel="stylesheet" href="css/vr.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="lienzo" aria-label="Gemelo digital 3D de la excavadora"></canvas>
+
+<!-- espectador: letrero mínimo para la tele de la expo -->
+<div class="espectador-hud" aria-live="polite">
+  <div class="marca">EXCAVADORA <span>XR</span></div>
+  <div class="cmd" id="estCmdEsp"></div>
+</div>
+
+<main class="panel vidrio">
+  <header>
+    <div class="marca">EXCAVADORA <span>XR</span></div>
+    <p class="sub">Control en realidad mixta y virtual · Meta Quest · WebXR</p>
+  </header>
+
+  <section class="estado">
+    <div class="cmd" id="estCmd">DETENIDO</div>
+    <span class="insignia" id="estModo">SIMULADOR</span>
+    <div class="chips" id="chips"></div>
+    <p class="aviso" id="estAviso"></p>
+  </section>
+
+  <section class="entrar">
+    <button class="grande mr" id="btnMR" disabled>
+      <b>Realidad mixta</b><small>Ves tu cuarto y la excavadora real con hologramas encima</small>
+    </button>
+    <button class="grande vr" id="btnVR" disabled>
+      <b>Cabina VR</b><small>Cabina futurista con el gemelo 3D en una arena</small>
+    </button>
+    <p class="nota" id="sinXR" hidden>Este navegador no tiene WebXR. Abre esta liga en el <b>navegador del Meta Quest</b>
+      (o instala la extensión <i>Immersive Web Emulator</i> para probar en la compu). Igual puedes manejar el simulador con el teclado.</p>
+  </section>
+
+  <section class="prep">
+    <div class="fila" id="cajaLlave">
+      <label for="llave">Llave de control</label>
+      <input id="llave" type="password" autocomplete="off" placeholder="API key (se guarda solo en este dispositivo)">
+      <button id="btnLlave">Guardar</button>
+      <small id="txtLlave"></small>
+    </div>
+    <div class="fila">
+      <button id="btnMic">🎙️ Activar micrófono</button>
+      <button id="btnHablar" title="Mantén oprimido y habla">Mantén para hablar</button>
+      <small id="txtMic">Revisando voz…</small>
+    </div>
+    <p class="voz" id="estVoz"></p>
+  </section>
+
+  <details class="ayuda">
+    <summary>Cómo se maneja</summary>
+    <ul>
+      <li><b>Hombre muerto:</b> solo se mueve mientras mantienes los <b>dos grips</b> (o tienes agarrada una palanca). Sueltas = alto.</li>
+      <li><b>Palancas:</b> agárralas con el grip (o pellizcando con la mano) e inclínalas. Izquierda = orugas, derecha = brazo y cabina.</li>
+      <li><b>Sticks</b> (con los grips apretados): izquierdo avanza / gira, derecho sube la pala / rota la cabina.</li>
+      <li><b>A</b> = STOP · <b>B</b> = mantén para hablar · <b>X</b> = prender / apagar · <b>Y</b> = centrar la consola.</li>
+      <li><b>Realidad mixta:</b> apunta al piso desde atrás de la excavadora real y aprieta el gatillo para anclar el holograma encima.</li>
+      <li><b>Voz:</b> “avanza dos segundos”, “sube la pala”, “haz una zanja”, “alto”.</li>
+      <li><b>Compu:</b> W A S D orugas · flechas brazo y cabina · espacio STOP.</li>
+    </ul>
+  </details>
+
+  <footer>
+    <button class="stop" id="btnStop">STOP</button>
+    <a href="./">← Control normal</a>
+    <a id="ligaEspectador" href="?espectador">Modo espectador (tele)</a>
+  </footer>
+</main>
+
+<script type="module" src="js/vr/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+/* Excavadora XR · página de preparación (2D) y modo espectador */
+:root { --fondo: #05070b; --neon: #3ee6ff; --mag: #ff3ec8; --verde: #39ff9a; --ambar: #ffb547; --rojo: #ff2a4a; --txt: #e8fbff; --gris: #7f98b8; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--txt); font-family: Oxanium, system-ui, sans-serif; overflow: hidden; }
+#lienzo { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; cursor: grab; }
+#lienzo:active { cursor: grabbing; }
+
+.vidrio { background: rgba(8, 14, 28, .72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(62, 230, 255, .35); box-shadow: 0 0 30px rgba(62, 230, 255, .12), inset 0 0 0 1px rgba(255, 255, 255, .03); }
+.panel { position: fixed; top: 16px; left: 16px; bottom: 16px; width: min(440px, calc(100vw - 32px)); border-radius: 22px;
+  padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.marca { font-family: "Saira Stencil One", Oxanium, sans-serif; font-size: 30px; letter-spacing: 2px; }
+.marca span { color: var(--mag); text-shadow: 0 0 14px var(--mag); }
+.sub { margin: 4px 0 0; color: var(--gris); font-size: 14px; }
+
+.estado { display: flex; flex-direction: column; gap: 8px; }
+.cmd { font-size: 40px; font-weight: 800; letter-spacing: 1px; }
+.cmd.mueve { color: var(--verde); text-shadow: 0 0 18px rgba(57, 255, 154, .6); }
+.insignia { align-self: flex-start; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 99px; letter-spacing: .5px; }
+.insignia.ambar { background: rgba(255, 181, 71, .16); color: var(--ambar); }
+.insignia.verde { background: rgba(57, 255, 154, .14); color: var(--verde); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; font-weight: 700; padding: 4px 10px 4px 22px; border-radius: 99px; background: rgba(255, 181, 71, .14); position: relative; }
+.chip::before { content: ""; position: absolute; left: 9px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: var(--ambar); }
+.chip.ok { background: rgba(57, 255, 154, .12); } .chip.ok::before { background: var(--verde); box-shadow: 0 0 6px var(--verde); }
+.chip.mal { background: rgba(255, 42, 74, .14); } .chip.mal::before { background: var(--rojo); }
+.aviso { margin: 0; min-height: 1.2em; color: #ff7a8e; font-size: 14px; }
+
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; border: 1px solid rgba(62, 230, 255, .4); background: rgba(62, 230, 255, .08); border-radius: 12px; padding: 9px 14px; font-weight: 700; }
+button:hover:not(:disabled) { background: rgba(62, 230, 255, .18); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button.on { border-color: var(--verde); background: rgba(57, 255, 154, .14); }
+.entrar { display: grid; gap: 10px; }
+.grande { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px 18px; border-radius: 16px; text-align: left; }
+.grande b { font-size: 22px; letter-spacing: .5px; }
+.grande small { color: var(--gris); font-weight: 500; font-size: 13px; }
+.grande.mr { border-color: rgba(255, 62, 200, .55); background: linear-gradient(120deg, rgba(255, 62, 200, .18), rgba(62, 230, 255, .08)); }
+.grande.vr { border-color: rgba(62, 230, 255, .6); background: linear-gradient(120deg, rgba(62, 230, 255, .2), rgba(138, 125, 255, .1)); }
+.grande:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 0 22px rgba(62, 230, 255, .25); }
+.nota { margin: 0; font-size: 13px; color: var(--ambar); line-height: 1.45; }
+
+.prep { display: flex; flex-direction: column; gap: 10px; }
+.fila { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fila label { width: 100%; font-size: 13px; color: var(--gris); }
+.fila input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(62, 230, 255, .3); background: rgba(0, 0, 0, .35); }
+.fila small { width: 100%; color: var(--gris); font-size: 12px; }
+#cajaLlave.lista small { color: var(--verde); }
+#btnHablar:active { border-color: var(--verde); background: rgba(57, 255, 154, .2); }
+.voz { margin: 0; min-height: 1.2em; font-size: 13px; color: #b6ffd8; }
+
+.ayuda { font-size: 13px; color: #c7d8ee; line-height: 1.5; }
+.ayuda summary { cursor: pointer; font-weight: 800; color: var(--neon); }
+.ayuda ul { padding-left: 18px; margin: 8px 0 0; }
+footer { margin-top: auto; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 13px; }
+footer a { color: var(--neon); }
+.stop { background: var(--rojo); border-color: #ff7a8e; color: #fff; font-size: 18px; font-weight: 800; padding: 10px 26px; box-shadow: 0 0 20px rgba(255, 42, 74, .45); }
+.stop:hover { background: #ff4561 !important; }
+
+/* modo espectador (tele de la expo): solo el gemelo y un letrero */
+.espectador-hud { display: none; }
+body.espectador .panel, body.en-xr .panel { display: none; }
+body.espectador .espectador-hud { display: block; position: fixed; left: 28px; top: 22px; padding: 14px 22px; border-radius: 18px;
+  background: rgba(8, 14, 28, .6); border: 1px solid rgba(62, 230, 255, .35); }
+body.espectador .espectador-hud .cmd { font-size: 52px; }
+
+@media (max-width: 700px) {
+  .panel { top: auto; height: 62vh; bottom: 10px; left: 10px; width: calc(100vw - 20px); }
+}

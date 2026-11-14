@@ -245,7 +245,8 @@ function montar() {
   if (!ajustes || $("admin")) return;
   const caja = h("div", { class: "vidrio tarjeta adm", id: "admin", hidden: true },
     h("div", { class: "fila" }, h("b", {}, "🛠️ Administración"),
-      h("a", { class: "adm-btn primario adm-expo", href: "expo.html", target: "_blank", rel: "noopener" }, "📺 Pantalla de la expo")),
+      h("a", { class: "adm-btn primario adm-expo", href: "expo.html", target: "_blank", rel: "noopener" }, "📺 Pantalla de la expo"),
+      h("a", { class: "adm-btn adm-expo", href: "vr.html" }, "🥽 Realidad virtual")),
     h("p", { class: "nota" }, "Solo aparece con la llave puesta. Los cambios se guardan en Amazon RDS con los servicios de la API."),
     h("div", { class: "seg", id: "admPestanas", role: "group", "aria-label": "Sección de administración" },
       h("button", { type: "button", dataset: { p: "vehiculos" } }, "🚜 Vehículos"),

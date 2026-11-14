@@ -89,6 +89,24 @@ Liga aparte para la tablet o el proyector: https://juanel2804.github.io/control-
 - **Indicadores:** WSS, API AWS, RDS y ESP32 (telemetría de los últimos 12 s).
 - Archivos: `expo.html`, `css/expo.css`, `js/expo/expo.js` (sala, WSS e historial) y `js/expo/diagrama.js` (animación SVG). Reutiliza `js/monitoreo/api.js`, `config.js` y `fechas.js`.
 
+## Realidad virtual y mixta (`vr.html`) · Meta Quest
+Liga: https://juanel2804.github.io/control-iot/vr.html. Se abre en el **navegador del Meta Quest** (WebXR, sin instalar nada). También aparece en Administración.
+Usa el mismo WebSocket y la misma llave que el control normal (`localStorage` del mismo dominio), así que el backend y el ESP32 no cambian.
+- **Realidad mixta (passthrough):** ves tu cuarto y la excavadora real. Encima flotan la pantalla del HUD (comando, WSS, ESP32, ping, sala, voz y avisos), la consola y un mini holograma.
+  Si apuntas al piso **desde atrás de la excavadora real** y aprietas el gatillo, el holograma del gemelo queda anclado encima y la sigue (con hit-test si el Quest conoce el cuarto, y si no, con el piso).
+- **Cabina VR:** cabina futurista con marco neón. Al frente está una arena con el gemelo 3D a escala, que imita cada comando que pasa por el servidor.
+- **Consola:** dos palancas que se agarran con el grip o pellizcando con la mano (izquierda = orugas, derecha = brazo y cabina; adelante = avanzar / subir pala), STOP tipo hongo y los botones PRENDER, AUX 1-3, VOZ (mantener) y CENTRAR. Los botones se aprietan tocándolos o apuntándolos con el gatillo.
+- **Hombre muerto:** los sticks solo mueven la excavadora mientras se mantienen **los dos grips**. Con las palancas, el seguro es tenerlas agarradas. Si sueltas, se manda DETENER.
+  También se manda alto al quitarse las gafas, al abrir el menú del sistema o al salir de la sesión. Sigue aplicando el tope de 20 s del ESP32.
+- **Botones:** A = STOP · B = mantener para hablar · X = prender/apagar · Y = centrar la consola frente a ti.
+- **Vibración:** al agarrar una palanca, al cambiar de comando, un «motor» suave mientras se mueve y una vibración fuerte en STOP.
+- **Voz:** el navegador del Quest no reconoce voz, así que la página graba hasta 8 s y `POST /vehiculos/{id}/voz` (API) la transcribe con OpenAI.
+  La llave `OPENAI_API_KEY` vive **solo en el `.env` de la EC2**. Las órdenes cortas van directo y las largas («haz una zanja») van al copiloto con Claude, o a las rutinas si no está disponible.
+- **Simulador (plan B):** sin enlace o sin llave, todo sigue funcionando, pero solo mueve el gemelo (el HUD dice «SIMULADOR»). `vr.html?sim` lo fuerza.
+- **Espectador:** `vr.html?espectador` muestra el gemelo en vivo a pantalla completa para la tele de la expo. Para ver lo mismo que el piloto se usa la transmisión del Quest.
+- **Probar sin gafas:** extensión *Immersive Web Emulator* en Chrome o Edge. En la compu, W A S D mueven las orugas, las flechas el brazo y espacio es STOP.
+- Archivos: `vr.html`, `css/vr.css` y `js/vr/` (`app.js` arranque y sesiones · `enlace.js` WSS y motor de movimiento · `mundo.js` escena 3D · `xr.js` controles del Quest · `voz.js` micrófono · `ordenes.js` intérprete y copiloto).
+
 ## Administración (Ajustes, solo con la llave)
 Usa los servicios REST que ya existen (sin cambios en el backend):
 - **Vehículos:** listar, crear, editar (incluye activo/inactivo) y eliminar.
