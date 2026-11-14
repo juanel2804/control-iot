@@ -15,11 +15,13 @@ const UMBRAL_STICK = .55, UMBRAL_PALANCA = .4, RECORRIDO = .07;
 const acotar = (v, a, b) => Math.max(a, Math.min(b, v));
 const BTN = { gatillo: 0, grip: 1, stick: 3, a: 4, b: 5 };   // mapeo "xr-standard" del Quest
 
-export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSoltarHablar, alCentrar, modoActual }) {
+export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSoltarHablar, alCentrar, modoActual, kai = null, alTocarKai = () => {} }) {
   const { escena, consola, reticula } = mundo;
   const fabControles = new XRControllerModelFactory(), fabManos = new XRHandModelFactory();
   const ray = new THREE.Raycaster(), tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), mat = new THREE.Matrix4();
-  const mallasBotones = consola.botones.map(b => b.malla);
+  // KAI se toca como un botón más (con el dedo, el control o apuntándole con el gatillo)
+  const botones = kai ? [...consola.botones, { accion: "KAI", malla: kai, esfera: .09 }] : consola.botones;
+  const mallasBotones = botones.map(b => b.malla);
   const salida = { seguro: false, seguroTxt: "TOMA LOS CONTROLES", origen: "", ultimo: null };
   let ultimoMotor = 0;
 
@@ -97,8 +99,9 @@ export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSolt
 
   /* ---------------- botones de la consola ---------------- */
   function presionarBoton(b, m) {
-    b.apretado = true; b.malla.position.y = b.yBase - .006; vibrar(m, b.accion === "STOP" ? 1 : .45, b.accion === "STOP" ? 150 : 35);
+    b.apretado = true; if (b.yBase != null) b.malla.position.y = b.yBase - .006; vibrar(m, b.accion === "STOP" ? 1 : .45, b.accion === "STOP" ? 150 : 35);
     switch (b.accion) {
+      case "KAI": alTocarKai(); break;
       case "STOP": alto(); vibrarTodos(1, 150); break;
       case "ENCENDER_APAGAR": pulso(b.accion, 400); break;
       case "AUX_1": case "AUX_2": case "AUX_3": pulso(b.accion, 500); break;
@@ -106,15 +109,17 @@ export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSolt
       case "CENTRAR": alCentrar(); break;
     }
   }
-  function soltarBoton(b) { if (!b.apretado) return; b.apretado = false; b.malla.position.y = b.yBase; if (b.accion === "VOZ") alSoltarHablar(); }
+  function soltarBoton(b) { if (!b.apretado) return; b.apretado = false; if (b.yBase != null) b.malla.position.y = b.yBase; if (b.accion === "VOZ") alSoltarHablar(); }
   function liberarBoton(m) { if (m.toque) { soltarBoton(m.toque); m.toque = null; } if (m.botonRay) { soltarBoton(m.botonRay); m.botonRay = null; } }
   function tocarBotones() {                                       // con la punta del control o del dedo índice
     for (const m of manos) {
       if (!m.src) continue;
       const p = puntoToque(m, new THREE.Vector3()); let tocado = null;
-      if (p) for (const b of consola.botones) {
+      if (p) for (const b of botones) {
+        if (!b.malla.visible || (b.esfera && !mundo.soporteKai.visible)) continue;
         const l = b.malla.worldToLocal(p.clone());
-        const dentro = b.accion === "STOP" ? Math.hypot(l.x, l.z) < .046 && l.y > -.02 && l.y < .03
+        const dentro = b.esfera ? l.length() < b.esfera
+          : b.accion === "STOP" ? Math.hypot(l.x, l.z) < .046 && l.y > -.02 && l.y < .03
           : Math.abs(l.x) < .04 && Math.abs(l.z) < .025 && l.y > -.012 && l.y < .022;
         if (dentro) { tocado = b; break; }
       }
@@ -132,7 +137,7 @@ export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSolt
     if (m.src?.hand && agarrarSiCerca(m)) return;
     const golpe = rayo(m).intersectObjects(mallasBotones, true)[0];
     if (golpe) {
-      const b = consola.botones.find(b => b.malla === golpe.object || b.malla === golpe.object.parent);
+      const b = botones.find(b => b.malla === golpe.object || b.malla === golpe.object.parent);
       if (b) { m.botonRay = b; presionarBoton(b, m); return; }
     }
     if (modoActual() !== "mr") return;

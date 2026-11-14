@@ -8,8 +8,9 @@ import * as THREE from "three";
 import { crearMundo, moverGemelo, nuevoEstado, ARENA_Z } from "./mundo.js";
 import { crearControlXR } from "./xr.js";
 import * as E from "./enlace.js";
-import { procesarFrase } from "./ordenes.js";
-import { voz, empezar, terminar, prepararMicro, revisarServicio, servicioVoz } from "./voz.js";
+import { procesarFrase, bienvenida } from "./ordenes.js";
+import { voz, empezar, terminar, prepararMicro, revisarServicio, flujoMicro } from "./voz.js";
+import { crearAsistente } from "./asistente.js";
 
 const $ = id => document.getElementById(id);
 const ESPECTADOR = new URLSearchParams(location.search).has("espectador");
@@ -39,33 +40,61 @@ E.on("comando", ({ c, ms }) => {
   vivo.c = c; vivo.hasta = performance.now() + (ms > 0 ? ms : 1000);
 });
 
-/* ---------------- voz ---------------- */
-let vozTxt = "";
-async function hablar() {
-  if (await empezar()) { vozTxt = "MIC: escuchando… suelta para mandar"; xr?.vibrarTodos(.2, 30); }
+/* ---------------- KAI: asistente holográfico + voz ---------------- */
+const kai = crearAsistente(); mundo.soporteKai.add(kai.grupo);
+let vozTxt = "", topeEscucha = null;
+async function hablar(porToque = false) {
+  kai.callar();
+  if (await empezar()) {
+    vozTxt = porToque ? "MIC: escuchando… toca a KAI otra vez para mandar" : "MIC: escuchando… suelta para mandar";
+    kai.estado("escucha"); kai.oyendo("…"); kai.escucharMic(flujoMicro()); xr?.vibrarTodos(.2, 30);
+    clearTimeout(topeEscucha); if (porToque) topeEscucha = setTimeout(soltarHablar, 7000);
+  } else kai.decir("No puedo escucharte: revisa el micrófono y tu llave de control.", { alerta: true });
 }
 async function soltarHablar() {
+  clearTimeout(topeEscucha);
   if (voz.estado !== "escuchando") return;
-  vozTxt = "MIC: transcribiendo…";
+  vozTxt = "MIC: transcribiendo…"; kai.estado("piensa"); kai.dejarMic();
   const t = await terminar();
-  vozTxt = t ? "MIC: " + await procesarFrase(t) : "MIC: no escuché nada";
+  if (!t) { vozTxt = "MIC: no escuché nada"; kai.decir("No te escuché. ¿Me lo repites?", { tu: "" }); return; }
+  kai.oyendo(t);
+  const r = await procesarFrase(t);
+  vozTxt = "MIC: " + r.sub; kai.decir(r.dicho, { tu: t });
 }
+const tocarKai = () => voz.estado === "escuchando" ? soltarHablar() : voz.estado === "lista" ? hablar(true) : null;
+
+// KAI avisa solo lo importante (cambios de enlace, ESP32, STOP y rechazos del servidor)
+const previo = { ws: null, esp: null }; let ultimoAviso = 0, bienvenidaDada = false;
+function avisar(texto, alerta = false) { const ahora = performance.now(); if (ahora - ultimoAviso < 1500) return; ultimoAviso = ahora; kai.decir(texto, { alerta }); }
+setInterval(() => {
+  if (!renderer.xr.isPresenting || !bienvenidaDada) { previo.ws = E.estado.ws; previo.esp = E.espEnLinea(); return; }
+  const ws = E.estado.ws, esp = E.espEnLinea();
+  if (previo.ws === "en_linea" && ws !== "en_linea") avisar("Perdí el enlace con la nube. Por seguridad, la excavadora se detiene sola.", true);
+  else if (previo.ws && previo.ws !== "en_linea" && ws === "en_linea") avisar("Enlace con la nube restablecido.");
+  else if (previo.esp && !esp && ws === "en_linea") avisar("Dejé de recibir señal del ESP32 de la excavadora.", true);
+  else if (previo.esp === false && esp) avisar("La excavadora está en línea.");
+  previo.ws = ws; previo.esp = esp;
+}, 500);
+E.on("rechazo", d => { if (renderer.xr.isPresenting && d) avisar(d, true); });
+E.on("alto", () => { if (renderer.xr.isPresenting && bienvenidaDada && voz.estado === "lista") avisar("Alto total."); });
 
 /* ---------------- controles XR ---------------- */
 let xr = null;
 try {
   xr = crearControlXR(renderer, mundo, { estadoGemelo: () => gem, alHablar: hablar, alSoltarHablar: soltarHablar,
-    alCentrar: () => mundo.centrar(renderer.xr.getCamera()), modoActual: () => modo });
+    alCentrar: () => mundo.centrar(renderer.xr.getCamera()), modoActual: () => modo,
+    kai: kai.colisionador, alTocarKai: tocarKai });
 } catch (e) { console.warn("Controles XR no disponibles", e); }
 
 async function entrar(tipo) {
   if (!navigator.xr) return;
+  kai.desbloquear();                    // el audio solo se puede activar dentro del clic
   const mr = tipo === "mr";
   try {
     const s = await navigator.xr.requestSession(mr ? "immersive-ar" : "immersive-vr", {
       requiredFeatures: ["local-floor"], optionalFeatures: ["hand-tracking", "hit-test", "layers"] });
     modo = mr ? "mr" : "vr"; mundo.modo(modo);
-    s.addEventListener("end", () => { xr?.soltarTodo(); E.alto(); modo = "2d"; mundo.modo("2d"); centrado = 0;
+    s.addEventListener("end", () => { xr?.soltarTodo(); E.alto(); modo = "2d"; mundo.modo("2d"); centrado = 0; bienvenidaDada = false; kai.callar(); kai.estado("lista");
       mundo.puesto.position.set(0, 0, 0); mundo.puesto.rotation.set(0, 0, 0); });
     // si se quita las gafas o abre el menú del sistema: alto inmediato
     s.addEventListener("visibilitychange", () => { if (s.visibilityState !== "visible") { xr?.soltarTodo(); E.alto(); } });
@@ -154,7 +183,7 @@ $("btnMic").addEventListener("click", async () => {
   $("btnMic").classList.toggle("on", ok);
   $("txtMic").textContent = s === "nube" ? "Voz con OpenAI (API en AWS)" : s === "navegador" ? "Voz del navegador" : "Voz no configurada en la API todavía";
 });
-$("btnHablar").addEventListener("pointerdown", e => { e.preventDefault(); hablar(); });
+$("btnHablar").addEventListener("pointerdown", e => { e.preventDefault(); kai.desbloquear(); hablar(); });
 ["pointerup", "pointerleave", "pointercancel"].forEach(ev => $("btnHablar").addEventListener(ev, soltarHablar));
 $("btnStop").addEventListener("click", () => { teclas.clear(); E.alto(); });
 $("ligaEspectador").href = location.pathname + "?espectador";
@@ -170,6 +199,8 @@ renderer.setAnimationLoop((ahora, frame) => {
   if (renderer.xr.isPresenting) {
     const camXR = renderer.xr.getCamera();
     if (centrado < 2) { centrado++; if (centrado === 2) mundo.centrar(camXR); }   // espera una pose válida
+    else if (!bienvenidaDada && centrado++ > 60) { bienvenidaDada = true; kai.decir(bienvenida()); }   // ~1 s después de entrar
+    kai.actualizar(dt, ojo);
     salida = xr ? xr.cuadro(dt, frame) : null;
     mundo.pantalla.dibujar(datosHUD(salida));
     camXR.getWorldPosition(ojo);
@@ -182,4 +213,4 @@ renderer.setAnimationLoop((ahora, frame) => {
 });
 
 E.conectar(); revisarXR(); revisarServicio().then(s => { $("txtMic").textContent = s === "nube" ? "Voz con OpenAI (API en AWS)" : s === "navegador" ? "Voz del navegador (solo compu)" : "Voz no configurada en la API todavía"; });
-window.XR_DEBUG = { E, gem, vivo, mundo };
+window.XR_DEBUG = { E, gem, vivo, mundo, kai };

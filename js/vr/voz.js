@@ -18,6 +18,7 @@ export async function revisarServicio() {
   return (servicio = Reconocedor ? "navegador" : "ninguno");
 }
 export const servicioVoz = () => servicio;
+export const flujoMicro = () => (flujo && flujo.active ? flujo : null);
 
 /** Pide el micrófono (mejor desde la página 2D, antes de entrar a VR). */
 export async function prepararMicro() {

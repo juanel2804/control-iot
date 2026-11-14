@@ -3,7 +3,7 @@
    Mismas reglas que la voz de index.html: órdenes cortas van directo; frases largas o rutinas
    van al copiloto (Claude en la API) y, si no está, a las rutinas integradas.
    ========================================================================= */
-import { API_BASE, vehiculo, llave, ETIQUETA, alto, pulso, mantener, ejecutarPlan, simulando } from "./enlace.js";
+import { API_BASE, vehiculo, llave, ETIQUETA, alto, pulso, mantener, ejecutarPlan, simulando, estado, espEnLinea } from "./enlace.js";
 
 const sinAcentos = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 const INTERRUPTOR = "ENCENDER_APAGAR", PULSO_INTERRUPTOR = 400;
@@ -62,17 +62,42 @@ async function hayCopiloto() {
   return copilotoNube;
 }
 
-/** Procesa una frase y regresa el texto que se muestra en el HUD. */
+/* ---------------- lo que dice KAI ---------------- */
+const DICHO = { AVANZAR: "Avanzando", RETROCEDER: "En reversa", GIRO_IZQUIERDA: "Girando a la izquierda", GIRO_DERECHA: "Girando a la derecha",
+  ROTACION_IZQUIERDA: "Rotando la cabina a la izquierda", ROTACION_DERECHA: "Rotando la cabina a la derecha", PALA_ARRIBA: "Subiendo la pala",
+  PALA_ABAJO: "Bajando la pala", ENCENDER_APAGAR: "Botón de encendido", AUX_1: "Auxiliar uno", AUX_2: "Auxiliar dos", AUX_3: "Auxiliar tres" };
+const segundos = ms => ms === 500 ? "medio segundo" : ms === 1000 ? "un segundo" : `${ms / 1000} segundos`;
+
+/** Frase de estado del sistema (para "¿cómo está la conexión?" y la bienvenida). */
+export function reporteEstado() {
+  const st = estado;
+  if (simulando()) return st.ws === "en_linea" && !llave() ? "Estoy en modo simulador porque falta tu llave de control. Solo se mueve el gemelo."
+    : "Estoy en modo simulador: no tengo enlace con la nube, así que solo se mueve el gemelo.";
+  const esp = espEnLinea() ? `La excavadora está conectada con señal de ${Math.abs(st.esp.rssi ?? 0)} decibeles negativos` : "No recibo señal del ESP32 de la excavadora";
+  return `Enlace con AWS en línea${st.ping != null ? `, latencia de ${st.ping} milisegundos` : ""}. ${esp}.`;
+}
+export function bienvenida() {
+  const h = new Date().getHours(), saludo = h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches";
+  return `${saludo}, Juan. Bienvenido a bordo. ${reporteEstado()} Mantén los dos grips para manejar, o tócame y dime qué hacer.`;
+}
+
+/** Procesa una frase. Regresa { sub: texto para el HUD, dicho: lo que KAI responde en voz }. */
 export async function procesarFrase(texto) {
   texto = (texto || "").trim();
-  if (!texto) return "No escuché nada";
+  if (!texto) return { sub: "No escuché nada", dicho: "No te escuché. ¿Me lo repites?" };
   const o = interpretar(texto);
-  if (o && o.c === "DETENER") { alto(); return `“${texto}” → ALTO`; }
+  if (o && o.c === "DETENER") { alto(); return { sub: `“${texto}” → ALTO`, dicho: "Alto total." }; }
   const t = sinAcentos(texto.toLowerCase());
+  // conversación: estado, presentación y cortesía (no mueven nada)
+  if (!o && /\b(estado|conexion|conectad|señal|senal|como esta|como vas|reporte|sistemas)\b/.test(t)) return { sub: `“${texto}” → estado`, dicho: reporteEstado() };
+  if (/\b(quien eres|como te llamas|presentate|que puedes hacer|ayuda)\b/.test(t))
+    return { sub: `“${texto}”`, dicho: "Soy KAI, el asistente de esta excavadora. Puedo moverla por ti: dime avanza dos segundos, sube la pala, haz una zanja o alto. También te reporto el estado de la conexión." };
+  if (/^(gracias|muchas gracias|gracias kai)\b/.test(t)) return { sub: `“${texto}”`, dicho: "Para servirte." };
   const corta = o && texto.split(/\s+/).length <= 6 && !/\b(y|luego|despues)\b/.test(t) && !RUTINAS.some(([re]) => re.test(t));
   if (corta) {
-    if (o.ms === 0) { mantener(o.c, "voz", 20000); return `“${texto}” → ${ETIQUETA[o.c]} (hasta “alto”)`; }
-    pulso(o.c, o.ms, "voz"); return `“${texto}” → ${ETIQUETA[o.c]} ${o.ms / 1000} s`;
+    if (o.ms === 0) { mantener(o.c, "voz", 20000); return { sub: `“${texto}” → ${ETIQUETA[o.c]} (hasta “alto”)`, dicho: `${DICHO[o.c]} sin parar. Dime alto cuando quieras.` }; }
+    pulso(o.c, o.ms, "voz");
+    return { sub: `“${texto}” → ${ETIQUETA[o.c]} ${o.ms / 1000} s`, dicho: o.c.startsWith("AUX") || o.c === "ENCENDER_APAGAR" ? `${DICHO[o.c]}.` : `${DICHO[o.c]} ${segundos(o.ms)}.` };
   }
   let r = null, quien = "RUTINAS";
   if (!simulando() && llave() && await hayCopiloto()) {
@@ -83,7 +108,8 @@ export async function procesarFrase(texto) {
     } catch {}
   }
   if (!r) r = planLocal(texto);
-  if (!r.pasos?.length) return `“${texto}” → no entendí`;
+  if (!r.pasos?.length) return { sub: `“${texto}” → no entendí`, dicho: "No entendí la orden. Prueba con algo como: avanza dos segundos y sube la pala." };
   ejecutarPlan(r.pasos);
-  return `“${texto}” → ${quien}: ${r.explicacion} (${r.pasos.length} pasos)`;
+  return { sub: `“${texto}” → ${quien}: ${r.explicacion} (${r.pasos.length} pasos)`,
+    dicho: `Entendido. ${r.explicacion.replace(/[.:]$/, "")}. Son ${r.pasos.length} pasos; di alto para cancelar.` };
 }

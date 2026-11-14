@@ -3,6 +3,7 @@
    pantalla del HUD y hologramas para realidad mixta. Medidas en metros (WebXR "local-floor").
    ========================================================================= */
 import * as THREE from "three";
+import { crearCabinaReal, crearBrazoReal, crearOrugas, crearObra, crearCieloDia, ESCALA_OBRA, ALTURA_PISO } from "./cabina.js";
 
 export const rad = g => g * Math.PI / 180;
 export const ARENA_Z = 4.4;          // la arena está 4.4 m frente al puesto
@@ -139,18 +140,23 @@ export const BOTONES = [
 ];
 function crearConsola() {
   const g = new THREE.Group();
-  const cuerpo = estandar(0x121826, 0, { metalness: .6, roughness: .3, transparent: true, opacity: .92 });
-  const bordes = new THREE.LineBasicMaterial({ color: NEON, transparent: true, opacity: .8 });
-  caja(.66, .05, .3, cuerpo, 0, -.025, 0, g, bordes);
+  // plástico negro mate como en una cabina real; solo los acentos llevan color
+  const cuerpo = estandar(0x26282d, 0, { metalness: .25, roughness: .7 });
+  const bordes = new THREE.LineBasicMaterial({ color: 0x4a4f58, transparent: true, opacity: .8 });
+  const hule = estandar(0x0f1012, 0, { roughness: .95, metalness: 0 }), empuñadura = estandar(0x1a1b1e, 0, { roughness: .6 });
+  for (const x of [-.215, .215]) caja(.15, .06, .32, cuerpo, x, -.03, .0, g, bordes);          // descansabrazos con joystick
+  caja(.13, .05, .14, cuerpo, 0, -.025, -.03, g, bordes);                                       // base del STOP
+  caja(.6, .03, .07, cuerpo, 0, -.012, .1, g, bordes);                                           // panel de botones
   const palancas = [], botones = [];
   for (const [nombre, x, titulo] of [["orugas", -.215, "ORUGAS"], ["brazo", .215, "BRAZO · CABINA"]]) {
-    const anillo = new THREE.Mesh(new THREE.TorusGeometry(.04, .006, 8, 32), estandar(nombre === "orugas" ? NEON : MAGENTA, 1.6));
-    anillo.rotation.x = Math.PI / 2; anillo.position.set(x, .002, -.02); g.add(anillo);
+    const fuelle = new THREE.Mesh(new THREE.CylinderGeometry(.012, .042, .045, 16, 3), hule); fuelle.position.set(x, .022, -.02); g.add(fuelle);
     const pivote = new THREE.Group(); pivote.position.set(x, 0, -.02); g.add(pivote);
     const vara = new THREE.Mesh(new THREE.CylinderGeometry(.007, .009, .13, 12), estandar(0x9aa4b8, 0, { metalness: .9, roughness: .2 }));
     vara.position.y = .065; pivote.add(vara);
-    const perilla = new THREE.Mesh(new THREE.SphereGeometry(.024, 20, 16), estandar(nombre === "orugas" ? NEON : MAGENTA, .9));
+    const perilla = new THREE.Mesh(new THREE.CapsuleGeometry(.02, .045, 6, 16), empuñadura);
     perilla.position.y = .135; pivote.add(perilla);
+    const gatillo = new THREE.Mesh(new THREE.CylinderGeometry(.009, .009, .008, 14), estandar(nombre === "orugas" ? AMBAR : ROJO, .6));
+    gatillo.position.y = .037; perilla.add(gatillo);
     const et = etiqueta(titulo, { ancho: .16, alto: .022, color: "#9feaff" }); et.rotation.x = -Math.PI / 2; et.position.set(x, .001, .045); g.add(et);
     const guia = etiqueta(nombre === "orugas" ? "AVANZA ▲  ◀ GIRA ▶  ▼ REVERSA" : "SUBE ▲  ◀ ROTA ▶  ▼ BAJA",
       { ancho: .2, alto: .016, color: "#6f8bab", peso: 600 }); guia.rotation.x = -Math.PI / 2; guia.position.set(x, .001, .065); g.add(guia);
@@ -232,16 +238,30 @@ export function crearMundo() {
   const decorado = new THREE.Group(); escena.add(decorado);
   const cielo = crearCielo(); decorado.add(cielo);
 
+  // cielo de día (solo VR)
+  const cieloDia = crearCieloDia(); cieloDia.visible = false; escena.add(cieloDia);
+  const solDia = new THREE.HemisphereLight(0xdcefff, 0x6b5434, 0); escena.add(solDia);
+
   // "puesto": todo lo que va frente al usuario; se recoloca con CENTRAR
   const puesto = new THREE.Group(); escena.add(puesto);
-  const cabinaVR = crearCabina(); puesto.add(cabinaVR);
-  const arena = crearArena(); arena.position.set(0, 0, -ARENA_Z); puesto.add(arena);
+  const cabinaNeon = crearCabina(); cabinaNeon.visible = false; puesto.add(cabinaNeon);   // (cabina futurista anterior, en reserva)
+  // cabina realista: se coloca a la altura de los ojos con CENTRAR
+  const cabReal = new THREE.Group(); puesto.add(cabReal);
+  const cabina = crearCabinaReal(); cabReal.add(cabina.grupo);
+  const brazoReal = crearBrazoReal(); cabReal.add(brazoReal.grupo);
+  const orugas = crearOrugas(); cabReal.add(orugas);
+  // la arena guarda la obra realista (VR) y el decorado neón (2D / espectador)
+  const arena = crearArena(); arena.matrixAutoUpdate = false; puesto.add(arena);
+  const neon = arena.children.slice();                     // piso, rejilla, aro, montones y postes neón
+  const obra = crearObra(); arena.add(obra);
   const gemelo = crearExcavadora("solida"); arena.add(gemelo.grupo);
   const etGemelo = etiqueta("GEMELO EN VIVO", { ancho: 1.2, alto: .16, color: "#e8fbff", fondo: "rgba(6,14,28,.7)" });
   arena.add(etGemelo);
 
   const consola = crearConsola(); puesto.add(consola.grupo);
   const pantalla = crearPantalla(); puesto.add(pantalla.malla);
+  const soporteKai = new THREE.Group(); puesto.add(soporteKai);   // aquí se monta el holograma del asistente
+  let modoActual = "2d";
 
   // mini holograma sobre la consola (radar del gemelo: solo giros, cabina y pala)
   const mini = crearExcavadora("holo"); mini.grupo.scale.setScalar(.13);
@@ -271,9 +291,19 @@ export function crearMundo() {
     puesto.position.set(p.x, 0, p.z); puesto.rotation.set(0, Math.atan2(-d.x, -d.z), 0);
     const yC = acotar(altura - .5, .65, 1.3);
     consola.grupo.position.set(0, yC, -.4); consola.grupo.rotation.x = .12;
-    // la pantalla va arriba de la línea de vista para no tapar el gemelo ni la excavadora real
-    pantalla.malla.position.set(0, acotar(altura + .3, 1.3, 2.3), -.9); pantalla.malla.rotation.x = .28;
-    baseMini.position.set(-.5, yC + .02, -.38);
+    if (modoActual === "vr") {
+      // sentado en la cabina: ojos ~1.2 m sobre el piso de la cabina
+      cabReal.position.set(0, altura - 1.2, -.05);
+      // pantalla = monitor del tablero, a la derecha; KAI flota en el centro del tablero
+      pantalla.malla.position.set(.36, altura - .12, -.56); pantalla.malla.rotation.set(-.15, -.55, 0); pantalla.malla.scale.setScalar(.55);
+      soporteKai.position.set(-.02, altura - .42, -.6);
+      baseMini.position.set(-.4, yC + .02, -.42);
+    } else {
+      // realidad mixta: la pantalla va arriba de la línea de vista para no tapar la excavadora real
+      pantalla.malla.position.set(0, acotar(altura + .3, 1.3, 2.3), -.9); pantalla.malla.rotation.set(.28, 0, 0); pantalla.malla.scale.setScalar(1);
+      soporteKai.position.set(-.48, altura - .38, -.62);
+      baseMini.position.set(-.5, yC + .02, -.38);
+    }
   }
 
   /** Ancla el holograma en un punto del cuarto, viendo hacia "rumbo". */
@@ -284,9 +314,23 @@ export function crearMundo() {
   }
 
   let reloj = 0;
+  const mA = new THREE.Matrix4(), mB = new THREE.Matrix4();
+  /** Primera persona: el mundo se acomoda alrededor de la cabina (la cabina no se mueve: menos mareo). */
+  function colocarArena(e) {
+    if (modoActual !== "vr") { arena.matrix.makeTranslation(0, 0, -ARENA_Z); return; }
+    const yaw = Math.PI - (e.rumbo + e.cabina);
+    arena.matrix.makeTranslation(0, cabReal.position.y - ALTURA_PISO, cabReal.position.z)
+      .multiply(mA.makeRotationY(yaw)).multiply(mB.makeScale(ESCALA_OBRA, ESCALA_OBRA, ESCALA_OBRA))
+      .multiply(mA.makeTranslation(-e.x, 0, -e.z));
+  }
   /** e: estado del gemelo; c: comando en curso (o null); txt: texto del comando. */
   function actualizar(e, c, txt, dt, ojo) {
     reloj += dt;
+    colocarArena(e);
+    brazoReal.poner(e.pala);
+    orugas.rotation.y = -e.cabina;                      // al rotar la cabina, las orugas giran debajo
+    cabina.faro.rotation.y += dt * (c ? 9 : 2);
+    cabina.faro.material.emissiveIntensity = c ? 1.2 + Math.sin(reloj * 18) * .8 : .6;
     gemelo.ponerEstado(e); mini.ponerEstado(e, false); holo.ponerEstado(e);
     etGemelo.position.set(e.x, 1.25, e.z);
     if (ojo) { etGemelo.lookAt(ojo); if (ancla.visible) etHolo.lookAt(ojo); }   // los letreros siempre de frente
@@ -299,13 +343,18 @@ export function crearMundo() {
 
   /** "vr" | "mr" | "2d": qué se muestra en cada modo. */
   function modo(m) {
-    const mr = m === "mr";
-    escena.background = mr ? null : new THREE.Color(0x05070d);
-    escena.fog = mr ? null : new THREE.Fog(0x05070d, 9, 30);
-    decorado.visible = !mr; arena.visible = !mr; cabinaVR.visible = m === "vr";
-    consola.grupo.visible = pantalla.malla.visible = baseMini.visible = m !== "2d";
+    modoActual = m;
+    const mr = m === "mr", vr = m === "vr";
+    escena.background = mr ? null : vr ? new THREE.Color(0xbcd3e6) : new THREE.Color(0x05070d);
+    escena.fog = mr ? null : vr ? new THREE.Fog(0xc9d6df, 40, 220) : new THREE.Fog(0x05070d, 9, 30);
+    solDia.intensity = vr ? 1.4 : 0; cieloDia.visible = vr;
+    decorado.visible = m === "2d"; arena.visible = !mr;
+    cabReal.visible = vr;
+    neon.forEach(o => o.visible = !vr); obra.visible = vr;
+    gemelo.grupo.visible = etGemelo.visible = !vr;          // en VR vas DENTRO de la excavadora
+    consola.grupo.visible = pantalla.malla.visible = baseMini.visible = soporteKai.visible = m !== "2d";
     if (!mr) { ancla.visible = false; reticula.visible = false; }
   }
 
-  return { escena, puesto, arena, gemelo, consola, pantalla, centrar, anclar, ancla, anclaje, reticula, actualizar, modo };
+  return { escena, puesto, arena, gemelo, consola, pantalla, soporteKai, centrar, anclar, ancla, anclaje, reticula, actualizar, modo };
 }

@@ -94,7 +94,12 @@ Liga: https://juanel2804.github.io/control-iot/vr.html. Se abre en el **navegado
 Usa el mismo WebSocket y la misma llave que el control normal (`localStorage` del mismo dominio), así que el backend y el ESP32 no cambian.
 - **Realidad mixta (passthrough):** ves tu cuarto y la excavadora real. Encima flotan la pantalla del HUD (comando, WSS, ESP32, ping, sala, voz y avisos), la consola y un mini holograma.
   Si apuntas al piso **desde atrás de la excavadora real** y aprietas el gatillo, el holograma del gemelo queda anclado encima y la sigue (con hit-test si el Quest conoce el cuarto, y si no, con el piso).
-- **Cabina VR:** cabina futurista con marco neón. Al frente está una arena con el gemelo 3D a escala, que imita cada comando que pasa por el servidor.
+- **Cabina VR (realista):** vas sentado dentro de la excavadora, con pilares, parabrisas, asiento, tablero con indicadores, faro giratorio y espejo, en una obra de día (tierra, montones, camión de volteo, cerca y árboles).
+  Por el parabrisas ves la pluma, el balancín y el cucharón, que suben y bajan con la pala. Al rotar la cabina o avanzar, la obra se mueve a tu alrededor y las orugas giran debajo de ti (`js/vr/cabina.js`). La vista 2D y el espectador siguen con la arena neón.
+- **KAI, asistente holográfico (`js/vr/asistente.js`):** núcleo de luz con anillos, partículas y un ecualizador que se mueve con su voz o con la tuya.
+  Al entrar te da la bienvenida con el estado del sistema. **Tócalo** (con el dedo, el control o el gatillo) para hablarle, o usa **B**. Ejecuta las órdenes y te responde en voz.
+  Contesta «¿cómo está la conexión?» y «¿quién eres?», y avisa solo de lo importante: enlace perdido o recuperado, ESP32 fuera o en línea, STOP y rechazos de la sala.
+  Su voz sale de `POST /vehiculos/{id}/voz/habla` (OpenAI TTS, voz *onyx*); sin API, usa la voz del navegador.
 - **Consola:** dos palancas que se agarran con el grip o pellizcando con la mano (izquierda = orugas, derecha = brazo y cabina; adelante = avanzar / subir pala), STOP tipo hongo y los botones PRENDER, AUX 1-3, VOZ (mantener) y CENTRAR. Los botones se aprietan tocándolos o apuntándolos con el gatillo.
 - **Hombre muerto:** los sticks solo mueven la excavadora mientras se mantienen **los dos grips**. Con las palancas, el seguro es tenerlas agarradas. Si sueltas, se manda DETENER.
   También se manda alto al quitarse las gafas, al abrir el menú del sistema o al salir de la sesión. Sigue aplicando el tope de 20 s del ESP32.
