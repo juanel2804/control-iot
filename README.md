@@ -10,17 +10,33 @@ por **REST (Fetch + async/await)** y **WebSocket seguro (WSS)**. No se creó otr
 
 Publicada en GitHub Pages: https://juanel2804.github.io/control-iot/ (botón **Monitoreo** del menú)
 
-## Archivos
-- `index.html` — la aplicación: CONTROL (script principal) y el marcado de MONITOREO.
-- `js/monitoreo/` — módulos ES6 de MONITOREO (ver «Mapa de módulos»).
-- `css/monitoreo.css` — estilos de MONITOREO (Mobile First, misma identidad visual).
-- `arena.js` — pestaña **🕹️ Arena** (solo frontend, mismos comandos y mismo WebSocket).
-- `sala.js` — pestaña **🎟️ Sala** (turnos con QR y panel del administrador) y botón **🎬 DEMOS** del control.
-- `gamer.css` — diseño «cabina de máquina pesada»: amarillo máquina con franjas de precaución, letra de esténcil y paneles de esquinas cortadas.
-- `gamer.js` — pantalla de bienvenida, telemetría real bajo el tablero y sonidos.
-- `manifest.webmanifest`, `sw.js`, `icono-192.png`, `icono-512.png` — instalable como app.
-- `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png` — favicon propio.
-- `docs/` — capturas de la app publicada.
+## Estructura
+```
+control-iot/
+├─ index.html              App principal: CONTROL (script principal) + marcado de MONITOREO
+├─ expo.html               Pantalla de la expo (tablet / proyector)
+├─ vr.html                 Realidad virtual y mixta (Meta Quest, WebXR)
+├─ manifest.webmanifest    App instalable (PWA)
+├─ sw.js                   Service worker (va en la raíz para cubrir todo el sitio)
+├─ css/
+│  ├─ gamer.css            Diseño «cabina de máquina pesada» (franjas de precaución, esténcil)
+│  ├─ monitoreo.css        Estilos de MONITOREO (Mobile First)
+│  ├─ admin.css            Administración
+│  ├─ expo.css             Pantalla de la expo
+│  └─ vr.css               Página de VR
+├─ js/
+│  ├─ control/             Scripts clásicos de CONTROL (orden de carga: gamer → sala → arena)
+│  │  ├─ gamer.js          Bienvenida, telemetría bajo el tablero y sonidos
+│  │  ├─ sala.js           Pestaña 🎟️ Sala (turnos con QR) y botón 🎬 DEMOS
+│  │  └─ arena.js          Pestaña 🕹️ Arena (simulador 3D, figuras, misiones)
+│  ├─ monitoreo/           Módulos ES6 de MONITOREO (ver «Mapa de módulos»)
+│  ├─ admin/               Administración (vehículos, comandos y DEMOs)
+│  ├─ expo/                Sala de la expo y diagrama animado
+│  └─ vr/                  Escena 3D, controles del Quest, voz y KAI
+├─ img/iconos/             Favicon, apple-touch-icon e íconos de la app (192 y 512)
+└─ docs/capturas/          Capturas de la app publicada
+```
+Las tres páginas HTML se quedan en la raíz para que no cambien las ligas publicadas ni el QR.
 
 ## Práctica 4.2 · MONITOREO
 
