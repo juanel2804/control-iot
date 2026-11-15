@@ -49,6 +49,14 @@ button.on { border-color: var(--verde); background: rgba(57, 255, 154, .14); }
 #btnHablar:active { border-color: var(--verde); background: rgba(57, 255, 154, .2); }
 .voz { margin: 0; min-height: 1.2em; font-size: 13px; color: #b6ffd8; }
 
+.reto { margin: 0; min-height: 1.2em; font-size: 14px; font-weight: 700; color: #ff8ae0; }
+.retos { display: flex; flex-direction: column; gap: 10px; }
+.retos h2 { margin: 4px 0 0; font-size: 15px; letter-spacing: .5px; color: var(--mag); }
+.retos h2 small { color: var(--gris); font-weight: 500; font-size: 12px; letter-spacing: 0; }
+.botonera { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 6px; }
+.botonera button { padding: 8px 10px; font-size: 13px; text-align: left; }
+.botonera button.on { border-color: var(--mag); background: rgba(255, 62, 200, .18); }
+#records { color: var(--gris); font-size: 12px; }
 .ayuda { font-size: 13px; color: #c7d8ee; line-height: 1.5; }
 .ayuda summary { cursor: pointer; font-weight: 800; color: var(--neon); }
 .ayuda ul { padding-left: 18px; margin: 8px 0 0; }
@@ -63,6 +71,7 @@ body.espectador .panel, body.en-xr .panel { display: none; }
 body.espectador .espectador-hud { display: block; position: fixed; left: 28px; top: 22px; padding: 14px 22px; border-radius: 18px;
   background: rgba(8, 14, 28, .6); border: 1px solid rgba(62, 230, 255, .35); }
 body.espectador .espectador-hud .cmd { font-size: 52px; }
+body.espectador .espectador-hud .reto { font-size: 22px; max-width: 60vw; }
 
 @media (max-width: 700px) {
   .panel { top: auto; height: 62vh; bottom: 10px; left: 10px; width: calc(100vw - 20px); }

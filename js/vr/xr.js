@@ -15,7 +15,7 @@ const UMBRAL_STICK = .55, UMBRAL_PALANCA = .4, RECORRIDO = .07;
 const acotar = (v, a, b) => Math.max(a, Math.min(b, v));
 const BTN = { gatillo: 0, grip: 1, stick: 3, a: 4, b: 5 };   // mapeo "xr-standard" del Quest
 
-export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSoltarHablar, alCentrar, modoActual, kai = null, alTocarKai = () => {} }) {
+export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSoltarHablar, alCentrar, modoActual, kai = null, alTocarKai = () => {}, alBoton = () => {} }) {
   const { escena, consola, reticula } = mundo;
   const fabControles = new XRControllerModelFactory(), fabManos = new XRHandModelFactory();
   const ray = new THREE.Raycaster(), tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), mat = new THREE.Matrix4();
@@ -107,6 +107,7 @@ export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSolt
       case "AUX_1": case "AUX_2": case "AUX_3": pulso(b.accion, 500); break;
       case "VOZ": alHablar(); break;
       case "CENTRAR": alCentrar(); break;
+      default: alBoton(b.accion);                                  // RETO, CLIMA, RADIO
     }
   }
   function soltarBoton(b) { if (!b.apretado) return; b.apretado = false; if (b.yBase != null) b.malla.position.y = b.yBase; if (b.accion === "VOZ") alSoltarHablar(); }

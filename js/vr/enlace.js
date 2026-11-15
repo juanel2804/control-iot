@@ -41,18 +41,31 @@ export const estado = {
   ping: null, esp: { ultima: 0, rssi: null, ip: null },
   api: null,                 // true | false | null (sin verificar)
   comando: "DETENER", comandoHasta: 0,
-  sala: null, aviso: "", avisoHasta: 0,
+  sala: null, salaRecibida: 0, aviso: "", avisoHasta: 0,
   plan: null,                // { pasos, k } mientras corre un plan del copiloto
 };
 const bus = new EventTarget();
 export const on = (tipo, f) => bus.addEventListener(tipo, e => f(e.detail));
 const emitir = (tipo, d) => bus.dispatchEvent(new CustomEvent(tipo, { detail: d }));
 export function aviso(t, ms = 4000) { estado.aviso = t; estado.avisoHasta = performance.now() + ms; emitir("aviso", t); }
-export const simulando = () => SOLO_SIM || !ws || ws.readyState !== 1 || !estado.autorizado;
+export const simulando = () => SOLO_SIM || juego || !ws || ws.readyState !== 1 || !estado.autorizado;
+/** Hay enlace real con la nube y la llave fue aceptada (aunque se esté jugando un reto). */
+export const conNube = () => !SOLO_SIM && !!ws && ws.readyState === 1 && estado.autorizado;
+
+/* ---------------- modo juego: retos y tutorial solo en el gemelo, nunca en la excavadora real ---------------- */
+let juego = false;
+export const enJuego = () => juego;
+export function modoJuego(v) {
+  v = !!v; if (v === juego) return;
+  if (mov.c || estado.plan) alto();         // frena la real solo si ESTE control la estaba moviendo (no estorba el turno de otro)
+  juego = v; cancelarPlan(); cortarRenovar(); mov.c = null; mov.origen = null;
+  verComando("DETENER"); emitir("juego", v);
+}
 export const espEnLinea = () => Date.now() - estado.esp.ultima < 12000;
 
 /* ---------------- WebSocket con reconexión 1, 2, 4 y luego cada 8 s ---------------- */
 let ws = null, intentos = 0;
+const salaLlego = m => { estado.sala = m; estado.salaRecibida = performance.now(); emitir("sala", m); };
 export function conectar() {
   if (SOLO_SIM) { estado.ws = "caido"; return; }
   estado.ws = intentos ? "reconectando" : "conectando";
@@ -71,12 +84,13 @@ export function conectar() {
       case "auth": estado.autorizado = !!m.ok; estado.llaveMala = !m.ok; if (!m.ok) aviso("Llave inválida: el control queda en SIMULADOR"); break;
       case "estado_inicial":
         if (m.telemetria) tele(m.telemetria);
-        if (m.sala) estado.sala = m.sala; break;
-      case "control": verComando(m.comando, m.ms); break;
-      case "movimiento": verComando(m.comando, 0); break;
-      case "demo_movimiento": verComando(m.comando, m.duracion_ms); break;
+        if (m.sala) salaLlego(m.sala); break;
+      // durante un reto el gemelo es solo del jugador: no lo mueven las órdenes de otros
+      case "control": if (!juego) verComando(m.comando, m.ms); break;
+      case "movimiento": if (!juego) verComando(m.comando, 0); break;
+      case "demo_movimiento": if (!juego) verComando(m.comando, m.duracion_ms); break;
       case "telemetria": tele(m); break;
-      case "sala": estado.sala = m; break;
+      case "sala": salaLlego(m); break;
       case "error": aviso(m.detalle || "Error del servidor"); emitir("rechazo", m.detalle); break;
     }
   };

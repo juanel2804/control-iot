@@ -32,7 +32,7 @@ control-iot/
 │  ├─ monitoreo/           Módulos ES6 de MONITOREO (ver «Mapa de módulos»)
 │  ├─ admin/               Administración (vehículos, comandos y DEMOs)
 │  ├─ expo/                Sala de la expo y diagrama animado
-│  └─ vr/                  Escena 3D, controles del Quest, voz y KAI
+│  └─ vr/                  Escena 3D, controles del Quest, voz, KAI, sonido, clima, retos y guía
 ├─ img/iconos/             Favicon, apple-touch-icon e íconos de la app (192 y 512)
 └─ docs/capturas/          Capturas de la app publicada
 ```
@@ -126,7 +126,21 @@ Usa el mismo WebSocket y la misma llave que el control normal (`localStorage` de
 - **Simulador (plan B):** sin enlace o sin llave, todo sigue funcionando, pero solo mueve el gemelo (el HUD dice «SIMULADOR»). `vr.html?sim` lo fuerza.
 - **Espectador:** `vr.html?espectador` muestra el gemelo en vivo a pantalla completa para la tele de la expo. Para ver lo mismo que el piloto se usa la transmisión del Quest.
 - **Probar sin gafas:** extensión *Immersive Web Emulator* en Chrome o Edge. En la compu, W A S D mueven las orugas, las flechas el brazo y espacio es STOP.
-- Archivos: `vr.html`, `css/vr.css` y `js/vr/` (`app.js` arranque y sesiones · `enlace.js` WSS y motor de movimiento · `mundo.js` escena 3D · `xr.js` controles del Quest · `voz.js` micrófono · `ordenes.js` intérprete y copiloto).
+- **Sonido (`js/vr/sonido.js`, sintetizado, sin archivos):** motor diésel que acelera al moverse, siseo hidráulico de la pala, bip-bip de reversa, freno de aire en STOP y **radio de cabina** con música generada (botón RADIO o «pon la radio»).
+- **Inmersión (`js/vr/efectos.js`):** polvo de las orugas y del cucharón, vibración ligera de la cabina (solo la cabina; el mundo no se mueve para no marear),
+  **clima** día / atardecer (faros de trabajo) / niebla / lluvia (gotas en el parabrisas y limpiador) y **espejo retrovisor** que de verdad refleja la obra de atrás.
+- **Retos (`js/vr/juegos.js`) · solo en el gemelo:** mientras hay un reto, ningún comando sale a la excavadora real (`modoJuego` en `enlace.js`) y el gemelo no lo mueven las órdenes de otros.
+  - 🚚 **Carga el camión:** muerde el montón con la pala hasta el piso, súbela y descarga en el camión. Dura 2 min (o lo que le quede al turno de la sala).
+  - ⛏️ **Zanja guiada:** con la pala abajo, sigue la línea amarilla; puntaje por precisión.
+  - 🚧 **Slalom de conos:** cada cono por el lado del círculo verde; +3 s por cono tirado y +5 s por lado equivocado.
+  - 🧱 **Demoler la pared:** 24 bloques con física sencilla (se caen los de arriba si quitas los de abajo).
+  - 🧠 **KAI dice:** repite la secuencia de movimientos; cada ronda es más larga.
+  - **Medallas del día y récords** (Camionero, Pulso de cirujano, Sin chocar, El más rápido del día, Demoledor, Memoria de elefante), guardados en el dispositivo.
+  - Se inician con el botón **RETO** de la consola (segunda fila, va pasando de uno en uno), por voz («carga el camión», «slalom», «sal del reto», «mis medallas») o desde la página.
+- **KAI como guía (`js/vr/guia.js`):** tutorial la primera vez (en el simulador, espera a que hagas cada movimiento), avisos del turno de la sala («quedan 15 segundos») con cronómetro en el HUD,
+  y **zona segura**: aro amarillo = aviso; si pasas el aro rojo alejándote, KAI frena. La posición es la del gemelo (estimada con los comandos), no un GPS.
+- Archivos: `vr.html`, `css/vr.css` y `js/vr/` (`app.js` arranque y sesiones · `enlace.js` WSS, motor de movimiento y modo juego · `mundo.js` escena 3D · `cabina.js` cabina y obra ·
+  `xr.js` controles del Quest · `voz.js` micrófono · `ordenes.js` intérprete y copiloto · `asistente.js` KAI · `sonido.js` · `efectos.js` · `juegos.js` · `guia.js`).
 
 ## Administración (Ajustes, solo con la llave)
 Usa los servicios REST que ya existen (sin cambios en el backend):

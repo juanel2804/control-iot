@@ -28,6 +28,7 @@
 <div class="espectador-hud" aria-live="polite">
   <div class="marca">EXCAVADORA <span>XR</span></div>
   <div class="cmd" id="estCmdEsp"></div>
+  <div class="reto" id="estRetoEsp"></div>
 </div>
 
 <main class="panel vidrio">
@@ -41,6 +42,7 @@
     <span class="insignia" id="estModo">SIMULADOR</span>
     <div class="chips" id="chips"></div>
     <p class="aviso" id="estAviso"></p>
+    <p class="reto" id="estReto"></p>
   </section>
 
   <section class="entrar">
@@ -48,7 +50,7 @@
       <b>Realidad mixta</b><small>Ves tu cuarto y la excavadora real con hologramas encima</small>
     </button>
     <button class="grande vr" id="btnVR" disabled>
-      <b>Cabina VR</b><small>Cabina futurista con el gemelo 3D en una arena</small>
+      <b>Cabina VR</b><small>Vas sentado en la excavadora, en una obra con clima, retos y KAI</small>
     </button>
     <p class="nota" id="sinXR" hidden>Este navegador no tiene WebXR. Abre esta liga en el <b>navegador del Meta Quest</b>
       (o instala la extensión <i>Immersive Web Emulator</i> para probar en la compu). Igual puedes manejar el simulador con el teclado.</p>
@@ -69,6 +71,29 @@
     <p class="voz" id="estVoz"></p>
   </section>
 
+  <section class="retos">
+    <h2>Retos <small>· solo en el simulador: la excavadora real no se mueve</small></h2>
+    <div class="botonera">
+      <button data-reto="carga">🚚 Carga el camión</button>
+      <button data-reto="zanja">⛏️ Zanja guiada</button>
+      <button data-reto="slalom">🚧 Slalom de conos</button>
+      <button data-reto="pared">🧱 Demoler la pared</button>
+      <button data-reto="simon">🧠 KAI dice</button>
+      <button id="btnTutorial">📘 Tutorial</button>
+    </div>
+    <div class="chips" id="medallas"></div>
+    <small id="records"></small>
+    <h2>Ambiente</h2>
+    <div class="botonera">
+      <button data-clima="dia">☀️ Día</button>
+      <button data-clima="atardecer">🌇 Atardecer</button>
+      <button data-clima="niebla">🌫️ Niebla</button>
+      <button data-clima="lluvia">🌧️ Lluvia</button>
+      <button id="btnRadio">📻 Radio</button>
+      <button id="btnSonido">🔊 Sonido</button>
+    </div>
+  </section>
+
   <details class="ayuda">
     <summary>Cómo se maneja</summary>
     <ul>
@@ -76,6 +101,10 @@
       <li><b>Palancas:</b> agárralas con el grip (o pellizcando con la mano) e inclínalas. Izquierda = orugas, derecha = brazo y cabina.</li>
       <li><b>Sticks</b> (con los grips apretados): izquierdo avanza / gira, derecho sube la pala / rota la cabina.</li>
       <li><b>A</b> = STOP · <b>B</b> = mantén para hablar · <b>X</b> = prender / apagar · <b>Y</b> = centrar la consola.</li>
+      <li><b>Segunda fila de la consola:</b> RETO (pasa al siguiente reto), CLIMA y RADIO.</li>
+      <li><b>Retos por voz:</b> “carga el camión”, “zanja”, “slalom”, “pared”, “KAI dice”, “sal del reto”, “mis medallas”, “tutorial”.</li>
+      <li><b>Ambiente por voz:</b> “que llueva”, “atardecer”, “niebla”, “de día”, “pon la radio”.</li>
+      <li><b>Zona segura:</b> aro amarillo = aviso; aro rojo = KAI frena si sigues alejándote (se calcula con el gemelo).</li>
       <li><b>Realidad mixta:</b> apunta al piso desde atrás de la excavadora real y aprieta el gatillo para anclar el holograma encima.</li>
       <li><b>Voz:</b> “avanza dos segundos”, “sube la pala”, “haz una zanja”, “alto”.</li>
       <li><b>Compu:</b> W A S D orugas · flechas brazo y cabina · espacio STOP.</li>

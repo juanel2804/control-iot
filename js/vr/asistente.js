@@ -6,7 +6,7 @@
    Voz: OpenAI por la API (POST /vehiculos/{id}/voz/habla) y, si no está, la voz del navegador.
    ========================================================================= */
 import * as THREE from "three";
-import { API_BASE, vehiculo, llave, simulando } from "./enlace.js";
+import { API_BASE, vehiculo, llave, conNube } from "./enlace.js";
 
 const COLOR = { lista: 0x3ee6ff, escucha: 0x39ff9a, piensa: 0xb06bff, habla: 0x6ff3ff, alerta: 0xff2a4a };
 const ADITIVO = op => ({ transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false });
@@ -131,7 +131,7 @@ export function crearAsistente() {
     if (!texto) return; const id = ++turno; callar();
     st.kai = texto; if (tu !== null) st.tu = tu; estado(alerta ? "alerta" : "habla"); subtitulos();
     try {
-      const puedeNube = vozNube !== false && llave() && !simulando();
+      const puedeNube = vozNube !== false && llave() && conNube();
       if (puedeNube) {
         const url = await audioNube(texto); if (id !== turno) return;
         const a = new Audio(url); audioActual = a; desbloquear();

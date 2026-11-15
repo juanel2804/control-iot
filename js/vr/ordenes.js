@@ -3,7 +3,7 @@
    Mismas reglas que la voz de index.html: órdenes cortas van directo; frases largas o rutinas
    van al copiloto (Claude en la API) y, si no está, a las rutinas integradas.
    ========================================================================= */
-import { API_BASE, vehiculo, llave, ETIQUETA, alto, pulso, mantener, ejecutarPlan, simulando, estado, espEnLinea } from "./enlace.js";
+import { API_BASE, vehiculo, llave, ETIQUETA, alto, pulso, mantener, ejecutarPlan, simulando, estado, espEnLinea, conNube, enJuego } from "./enlace.js";
 
 const sinAcentos = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 const INTERRUPTOR = "ENCENDER_APAGAR", PULSO_INTERRUPTOR = 400;
@@ -71,6 +71,7 @@ const segundos = ms => ms === 500 ? "medio segundo" : ms === 1000 ? "un segundo"
 /** Frase de estado del sistema (para "¿cómo está la conexión?" y la bienvenida). */
 export function reporteEstado() {
   const st = estado;
+  if (enJuego()) return "Estás en el simulador de retos: la excavadora real no se mueve.";
   if (simulando()) return st.ws === "en_linea" && !llave() ? "Estoy en modo simulador porque falta tu llave de control. Solo se mueve el gemelo."
     : "Estoy en modo simulador: no tengo enlace con la nube, así que solo se mueve el gemelo.";
   const esp = espEnLinea() ? `La excavadora está conectada con señal de ${Math.abs(st.esp.rssi ?? 0)} decibeles negativos` : "No recibo señal del ESP32 de la excavadora";
@@ -100,7 +101,7 @@ export async function procesarFrase(texto) {
     return { sub: `“${texto}” → ${ETIQUETA[o.c]} ${o.ms / 1000} s`, dicho: o.c.startsWith("AUX") || o.c === "ENCENDER_APAGAR" ? `${DICHO[o.c]}.` : `${DICHO[o.c]} ${segundos(o.ms)}.` };
   }
   let r = null, quien = "RUTINAS";
-  if (!simulando() && llave() && await hayCopiloto()) {
+  if (conNube() && llave() && await hayCopiloto()) {
     try {
       const resp = await fetch(`${API_BASE}/vehiculos/${vehiculo}/copiloto`, { method: "POST",
         headers: { "Content-Type": "application/json", "X-API-Key": llave() }, body: JSON.stringify({ texto }) });

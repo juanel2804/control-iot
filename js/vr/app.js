@@ -11,6 +11,10 @@ import * as E from "./enlace.js";
 import { procesarFrase, bienvenida } from "./ordenes.js";
 import { voz, empezar, terminar, prepararMicro, revisarServicio, flujoMicro } from "./voz.js";
 import { crearAsistente } from "./asistente.js";
+import * as son from "./sonido.js";
+import { crearEfectos, NOMBRE_CLIMA } from "./efectos.js";
+import { crearJuegos, RETOS, NOMBRE as NOMBRE_RETO, MEDALLAS } from "./juegos.js";
+import { crearGuia } from "./guia.js";
 
 const $ = id => document.getElementById(id);
 const ESPECTADOR = new URLSearchParams(location.search).has("espectador");
@@ -42,6 +46,27 @@ E.on("comando", ({ c, ms }) => {
 
 /* ---------------- KAI: asistente holográfico + voz ---------------- */
 const kai = crearAsistente(); mundo.soporteKai.add(kai.grupo);
+
+/* ---------------- inmersión, retos (solo gemelo) y guía ---------------- */
+mundo.alModo.push(son.modo); son.modo(modo);
+const efectos = crearEfectos(renderer, mundo);
+let guia = null;
+const juegos = crearJuegos({ mundo, gem, kai, efectos, alIniciar: () => guia?.terminarTutorial(false, false) });
+guia = crearGuia({ mundo, gem, kai, juegos, enXR: () => renderer.xr.isPresenting, espectador: ESPECTADOR });
+function botonExtra(accion) {
+  son.desbloquear(); son.efecto.boton();
+  if (accion === "RETO") juegos.siguiente();
+  else if (accion === "CLIMA") kai.decir("Clima: " + NOMBRE_CLIMA[efectos.siguienteClima()] + ".");
+  else if (accion === "RADIO") kai.decir(son.radio() ? "Radio prendida." : "Radio apagada.");
+}
+/** Frases de retos, tutorial, clima y radio; si no es ninguna, va al intérprete de órdenes. */
+async function frase(t) {
+  if (!/\b(alto|stop|detente|frena)\b/i.test(t)) {
+    const r = guia.comandoVoz(t) || juegos.comandoVoz(t) || efectos.comandoVoz(t);
+    if (r) return r;
+  }
+  return procesarFrase(t);
+}
 let vozTxt = "", topeEscucha = null;
 async function hablar(porToque = false) {
   kai.callar();
@@ -58,8 +83,8 @@ async function soltarHablar() {
   const t = await terminar();
   if (!t) { vozTxt = "MIC: no escuché nada"; kai.decir("No te escuché. ¿Me lo repites?", { tu: "" }); return; }
   kai.oyendo(t);
-  const r = await procesarFrase(t);
-  vozTxt = "MIC: " + r.sub; kai.decir(r.dicho, { tu: t });
+  const r = await frase(t);
+  vozTxt = "MIC: " + r.sub; if (r.dicho) kai.decir(r.dicho, { tu: t }); else kai.oyendo(t);
 }
 const tocarKai = () => voz.estado === "escuchando" ? soltarHablar() : voz.estado === "lista" ? hablar(true) : null;
 
@@ -83,18 +108,18 @@ let xr = null;
 try {
   xr = crearControlXR(renderer, mundo, { estadoGemelo: () => gem, alHablar: hablar, alSoltarHablar: soltarHablar,
     alCentrar: () => mundo.centrar(renderer.xr.getCamera()), modoActual: () => modo,
-    kai: kai.colisionador, alTocarKai: tocarKai });
+    kai: kai.colisionador, alTocarKai: tocarKai, alBoton: botonExtra });
 } catch (e) { console.warn("Controles XR no disponibles", e); }
 
 async function entrar(tipo) {
   if (!navigator.xr) return;
-  kai.desbloquear();                    // el audio solo se puede activar dentro del clic
+  kai.desbloquear(); son.desbloquear();   // el audio solo se puede activar dentro del clic
   const mr = tipo === "mr";
   try {
     const s = await navigator.xr.requestSession(mr ? "immersive-ar" : "immersive-vr", {
       requiredFeatures: ["local-floor"], optionalFeatures: ["hand-tracking", "hit-test", "layers"] });
     modo = mr ? "mr" : "vr"; mundo.modo(modo);
-    s.addEventListener("end", () => { xr?.soltarTodo(); E.alto(); modo = "2d"; mundo.modo("2d"); centrado = 0; bienvenidaDada = false; kai.callar(); kai.estado("lista");
+    s.addEventListener("end", () => { juegos.terminar(null, true); guia.terminarTutorial(false, false); xr?.soltarTodo(); E.alto(); modo = "2d"; mundo.modo("2d"); centrado = 0; bienvenidaDada = false; kai.callar(); kai.estado("lista");
       mundo.puesto.position.set(0, 0, 0); mundo.puesto.rotation.set(0, 0, 0); });
     // si se quita las gafas o abre el menú del sistema: alto inmediato
     s.addEventListener("visibilitychange", () => { if (s.visibilityState !== "visible") { xr?.soltarTodo(); E.alto(); } });
@@ -121,14 +146,15 @@ function datosHUD(salida) {
     [E.espEnLinea() ? `ESP32 ${st.esp.rssi ?? ""} dBm` : "ESP32 FUERA", E.espEnLinea()]];
   if (st.ping != null && st.ws === "en_linea") chips.push([`${st.ping} ms`, st.ping < 250]);
   let sala = "";
-  if (st.sala?.abierta) sala = st.sala.turno ? `SALA: turno de ${st.sala.turno.nombre}${st.sala.pausada ? " (pausada)" : ""}` : "SALA ABIERTA · sin turno";
+  const restan = guia.restanTurno(), mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  if (st.sala?.abierta) sala = st.sala.turno ? `SALA: turno de ${st.sala.turno.nombre}${st.sala.pausada ? " (pausada)" : restan != null ? " · " + mmss(restan) : ""}` : "SALA ABIERTA · sin turno";
   const plan = st.plan ? `PLAN ${st.plan.k + 1}/${st.plan.pasos.length}: ${E.ETIQUETA[st.plan.pasos[st.plan.k].comando] || ""}` : "";
   return {
-    modo: (sim ? "SIMULADOR · " : "") + (modo === "mr" ? "REALIDAD MIXTA" : modo === "vr" ? "CABINA VR" : "ESPECTADOR"),
+    modo: (E.enJuego() ? "RETO · SIMULADOR · " : sim ? "SIMULADOR · " : "") + (modo === "mr" ? "REALIDAD MIXTA" : modo === "vr" ? "CABINA VR" : "ESPECTADOR"),
     comando: mueve ? (E.ETIQUETA[vivo.c] || vivo.c) : "DETENIDO", mueve,
     origen: mueve && salida?.origen ? "desde " + salida.origen : mueve && E.origenActual() ? "desde " + E.origenActual().toUpperCase() : "",
     chips, seguro: !!salida?.seguro, seguroTxt: salida?.seguroTxt || "",
-    sala, plan, voz: vozTxt, aviso: st.avisoHasta > ahora ? st.aviso : "",
+    sala, plan, voz: vozTxt, aviso: st.avisoHasta > ahora ? st.aviso : "", reto: juegos.linea || guia.linea,
   };
 }
 
@@ -152,6 +178,20 @@ function pintar2D() {
     const s = document.createElement("span"); s.className = "chip " + (ok === true ? "ok" : ok === false ? "mal" : ""); s.textContent = t; return s;
   }));
   $("estAviso").textContent = d.aviso; $("estVoz").textContent = vozTxt;
+  $("estReto").textContent = d.reto; $("estRetoEsp").textContent = d.reto;
+  $("estModo").textContent = E.enJuego() ? "RETO EN EL SIMULADOR (la real no se mueve)" : $("estModo").textContent;
+  for (const b of document.querySelectorAll("[data-reto]")) b.classList.toggle("on", juegos.activo === b.dataset.reto);
+  for (const b of document.querySelectorAll("[data-clima]")) b.classList.toggle("on", efectos.clima === b.dataset.clima);
+  $("btnRadio").classList.toggle("on", son.radioPrendida()); $("btnSonido").textContent = son.sonidoActivo() ? "🔊 Sonido" : "🔇 Sin sonido";
+  const med = juegos.medallasHoy(), rec = juegos.records(), hoyK = Object.keys(rec).find(k => k.startsWith("slalom_") && k.endsWith(new Date().toISOString().slice(0, 10)));
+  const clave = med.join() + JSON.stringify(rec);
+  if ($("medallas").dataset.k !== clave) {
+    $("medallas").dataset.k = clave;
+    $("medallas").replaceChildren(...(med.length ? med : ["—"]).map(m => { const s = document.createElement("span"); s.className = "chip ok"; s.textContent = m === "—" ? "Sin medallas hoy" : "🏅 " + MEDALLAS[m]; return s; }));
+    const r = []; if (rec.carga != null) r.push(`Camión: ${rec.carga} cargas`); if (rec.zanja != null) r.push(`Zanja: ${rec.zanja}%`);
+    if (hoyK) r.push(`Slalom hoy: ${rec[hoyK]} s`); if (rec.pared != null) r.push(`Pared: ${rec.pared} s`); if (rec.simon != null) r.push(`KAI dice: ${rec.simon} rondas`);
+    $("records").textContent = r.length ? "Récords: " + r.join(" · ") : "";
+  }
   $("cajaLlave").classList.toggle("lista", !!E.llave() && !st.llaveMala);
   $("txtLlave").textContent = !E.llave() ? "Sin llave: solo simulador" : st.llaveMala ? "Llave inválida" : st.autorizado ? "Llave aceptada" : "Llave guardada";
 }
@@ -187,6 +227,13 @@ $("btnHablar").addEventListener("pointerdown", e => { e.preventDefault(); kai.de
 ["pointerup", "pointerleave", "pointercancel"].forEach(ev => $("btnHablar").addEventListener(ev, soltarHablar));
 $("btnStop").addEventListener("click", () => { teclas.clear(); E.alto(); });
 $("ligaEspectador").href = location.pathname + "?espectador";
+// retos, clima y radio desde la página (sirven para probar en la compu y para la tele)
+for (const b of document.querySelectorAll("[data-reto]")) b.addEventListener("click", () => { son.desbloquear(); kai.desbloquear(); juegos.activo === b.dataset.reto ? juegos.terminar() : juegos.iniciar(b.dataset.reto); });
+for (const b of document.querySelectorAll("[data-clima]")) b.addEventListener("click", () => efectos.ponerClima(b.dataset.clima));
+$("btnRadio").addEventListener("click", () => son.radio());
+$("btnSonido").addEventListener("click", () => { son.desbloquear(); son.activar(); });
+$("btnTutorial").addEventListener("click", () => { kai.desbloquear(); son.desbloquear(); guia.iniciarTutorial(); });
+addEventListener("pointerdown", () => son.desbloquear()); addEventListener("keydown", () => son.desbloquear());
 
 /* ---------------- ciclo principal ---------------- */
 let t0 = performance.now(), centrado = 0, ultimo2D = 0;
@@ -199,7 +246,10 @@ renderer.setAnimationLoop((ahora, frame) => {
   if (renderer.xr.isPresenting) {
     const camXR = renderer.xr.getCamera();
     if (centrado < 2) { centrado++; if (centrado === 2) mundo.centrar(camXR); }   // espera una pose válida
-    else if (!bienvenidaDada && centrado++ > 60) { bienvenidaDada = true; kai.decir(bienvenida()); }   // ~1 s después de entrar
+    else if (!bienvenidaDada && centrado++ > 60) {                                   // ~1 s después de entrar
+      bienvenidaDada = true;
+      kai.decir(bienvenida()).then(() => { if (modo === "vr" && guia.primeraVez() && !juegos.activo && !guia.tutorial) guia.iniciarTutorial(); });
+    }
     kai.actualizar(dt, ojo);
     salida = xr ? xr.cuadro(dt, frame) : null;
     mundo.pantalla.dibujar(datosHUD(salida));
@@ -209,8 +259,11 @@ renderer.setAnimationLoop((ahora, frame) => {
     if (ahora - ultimo2D > 150) { ultimo2D = ahora; pintar2D(); }
   }
   mundo.actualizar(gem, vivo.c, E.ETIQUETA[vivo.c] || vivo.c || "", dt, ojo);
+  son.comando(vivo.c); son.cuadro(dt, ahora);
+  efectos.cuadro(dt, gem, vivo.c); juegos.cuadro(dt); guia.cuadro(dt, vivo.c, ahora, renderer.xr.isPresenting);
+  efectos.pintarEspejo();
   renderer.render(mundo.escena, camara);
 });
 
 E.conectar(); revisarXR(); revisarServicio().then(s => { $("txtMic").textContent = s === "nube" ? "Voz con OpenAI (API en AWS)" : s === "navegador" ? "Voz del navegador (solo compu)" : "Voz no configurada en la API todavía"; });
-window.XR_DEBUG = { E, gem, vivo, mundo, kai };
+window.XR_DEBUG = { E, gem, vivo, mundo, kai, juegos, guia, efectos, son };

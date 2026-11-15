@@ -74,7 +74,13 @@ export function crearCabinaReal() {
   // parabrisas (arriba y abajo) con limpiador
   const pb = new THREE.Mesh(new THREE.PlaneGeometry(W * 2 - .06, H - .7), vidrio); pb.position.set(0, .64 + (H - .7) / 2, ZF); g.add(pb);
   const pb2 = new THREE.Mesh(new THREE.PlaneGeometry(W * 2 - .06, .56), vidrio); pb2.position.set(0, .33, ZF); g.add(pb2);
-  const limpiador = caja(.012, .7, .012, pilar, .25, 1.05, ZF + .02, g); limpiador.rotation.z = .35;
+  // limpiador con pivote abajo (se mueve con lluvia) y capa de gotas sobre el parabrisas
+  const limpiador = new THREE.Group(); limpiador.position.set(.12, .66, ZF + .025); limpiador.rotation.z = .9; g.add(limpiador);
+  caja(.012, .62, .012, pilar, 0, .31, 0, limpiador); caja(.02, .58, .006, mat(0x0a0a0a, { roughness: 1 }), 0, .32, .008, limpiador);
+  const cvGotas = document.createElement("canvas"); cvGotas.width = cvGotas.height = 256;
+  const texGotas = new THREE.CanvasTexture(cvGotas); texGotas.colorSpace = THREE.SRGBColorSpace;
+  const gotas = new THREE.Mesh(new THREE.PlaneGeometry(W * 2 - .06, H - .7), new THREE.MeshBasicMaterial({ map: texGotas, transparent: true, depthWrite: false }));
+  gotas.position.set(0, .64 + (H - .7) / 2, ZF + .012); gotas.visible = false; gotas.userData = { cv: cvGotas, tex: texGotas }; g.add(gotas);
   // puerta (izquierda) con ventana y barra
   caja(.04, .55, ZT - ZF - .1, amarillo, -W, .3, (ZF + ZT) / 2, g);
   const vi = new THREE.Mesh(new THREE.PlaneGeometry(ZT - ZF - .1, H - .65), vidrio); vi.rotation.y = Math.PI / 2; vi.position.set(-W, .6 + (H - .65) / 2, (ZF + ZT) / 2); g.add(vi);
@@ -108,10 +114,19 @@ export function crearCabinaReal() {
   // espejo retrovisor exterior (izquierda)
   const brazoEsp = caja(.02, .02, .25, pilar, -W - .12, 1.25, ZF + .05, g); brazoEsp.rotation.y = .5;
   const espejo = caja(.16, .1, .01, new THREE.MeshStandardMaterial({ color: 0xcfe3ee, metalness: 1, roughness: .05 }), -W - .22, 1.25, ZF - .05, g); espejo.rotation.y = .4;
+  // faros de trabajo en el techo (se prenden al atardecer y con lluvia)
+  const faros = [];
+  for (const s of [-1, 1]) {
+    const f = new THREE.SpotLight(0xfff1d0, 0, 60, .5, .45, 1.2); f.position.set(s * .4, H + .05, ZF); f.target.position.set(s * .6, -1.2, ZF - 8);
+    g.add(f, f.target); faros.push(f);
+    caja(.12, .07, .06, mat(0x222), s * .4, H + .05, ZF - .02, g);
+  }
+  const lucesFaro = faros.map((_, i) => { const m = new THREE.Mesh(new THREE.CircleGeometry(.03, 16), new THREE.MeshBasicMaterial({ color: 0x555555 }));
+    m.position.set((i ? 1 : -1) * .4, H + .05, ZF - .055); m.rotation.y = Math.PI; g.add(m); return m; });
   // cofre del motor (se ve por la ventana derecha)
   caja(1.1, .7, 1.7, amarillo, W + .75, -.05, .35, g);
   caja(.3, .12, .3, mat(0x222), W + 1.0, .36, .7, g);                                          // escape
-  return { grupo: g, faro };
+  return { grupo: g, faro, limpiador, gotas, espejo, faros, lucesFaro };
 }
 
 /* ---------------- brazo, balancín y pala (se ven desde la cabina) ---------------- */
@@ -130,6 +145,9 @@ export function crearBrazoReal() {
   caja(.6, .06, .45, negro, 0, -.5, -.22, pala);                                                // fondo
   for (const s of [-1, 1]) caja(.04, .5, .45, negro, s * .3, -.25, -.22, pala);
   for (let i = 0; i < 5; i++) caja(.05, .04, .12, acero, -.24 + i * .12, -.5, -.48, pala);       // dientes
+  const punta = new THREE.Object3D(); punta.position.set(0, -.45, -.4); pala.add(punta);          // donde muerde (retos)
+  const carga = new THREE.Mesh(new THREE.SphereGeometry(.3, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0x6a4c2e, { roughness: 1, map: texturaRuido("#6a4c2e", 50, 64, 2, 40) }));
+  carga.scale.set(1, .01, .75); carga.position.set(0, -.47, -.22); carga.visible = false; pala.add(carga);   // tierra en el cucharón
   /** pala: grados del gemelo (-30 a 60) */
   function poner(paladeg) {
     pluma.rotation.x = rad(15 + .6 * paladeg);
@@ -137,7 +155,7 @@ export function crearBrazoReal() {
     pala.rotation.x = rad(-40 + .4 * paladeg);
   }
   poner(15);
-  return { grupo: raiz, poner };
+  return { grupo: raiz, poner, punta, carga };
 }
 
 /* ---------------- orugas debajo de la cabina ---------------- */

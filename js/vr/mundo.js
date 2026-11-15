@@ -71,11 +71,14 @@ export function crearExcavadora(estilo = "solida") {
   B(.14, .14, .82, amarillo, 0, 0, .41, brazo);
   B(.38, .22, .2, gris, 0, -.08, .86, brazo);                                       // pala
   B(.36, .03, .03, neon, 0, .04, .97, brazo);
+  const punta = new THREE.Object3D(); punta.position.set(0, -.17, .9); brazo.add(punta);              // donde muerde (retos)
+  const carga = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), estandar(0x8a5a2b));
+  carga.position.set(0, -.02, .86); carga.visible = false; brazo.add(carga);
   const ponerEstado = (e, conPosicion = true) => {
     maquina.position.set(conPosicion ? e.x : 0, 0, conPosicion ? e.z : 0);
     maquina.rotation.y = e.rumbo; cabina.rotation.y = e.cabina; brazo.rotation.x = -rad(e.pala);
   };
-  return { grupo: maquina, cabina, brazo, ponerEstado };
+  return { grupo: maquina, cabina, brazo, punta, carga, ponerEstado };
 }
 
 /* ---------------- arena virtual (solo en la cabina VR y en la vista 2D) ---------------- */
@@ -137,6 +140,9 @@ export const BOTONES = [
   { accion: "AUX_1", texto: "AUX 1", color: 0x8a7dff }, { accion: "AUX_2", texto: "AUX 2", color: 0x8a7dff }, { accion: "AUX_3", texto: "AUX 3", color: 0x8a7dff },
   { accion: "VOZ", texto: "VOZ", color: VERDE, mantener: true },
   { accion: "CENTRAR", texto: "CENTRAR", color: NEON },
+  // segunda fila: retos (solo gemelo), clima y radio
+  { accion: "RETO", texto: "RETO", color: MAGENTA, fila: 2 }, { accion: "CLIMA", texto: "CLIMA", color: 0x7fb3e6, fila: 2 },
+  { accion: "RADIO", texto: "RADIO", color: 0xffd23e, fila: 2 },
 ];
 function crearConsola() {
   const g = new THREE.Group();
@@ -147,6 +153,7 @@ function crearConsola() {
   for (const x of [-.215, .215]) caja(.15, .06, .32, cuerpo, x, -.03, .0, g, bordes);          // descansabrazos con joystick
   caja(.13, .05, .14, cuerpo, 0, -.025, -.03, g, bordes);                                       // base del STOP
   caja(.6, .03, .07, cuerpo, 0, -.012, .1, g, bordes);                                           // panel de botones
+  caja(.3, .03, .06, cuerpo, 0, -.012, .162, g, bordes);                                         // segunda fila
   const palancas = [], botones = [];
   for (const [nombre, x, titulo] of [["orugas", -.215, "ORUGAS"], ["brazo", .215, "BRAZO · CABINA"]]) {
     const fuelle = new THREE.Mesh(new THREE.CylinderGeometry(.012, .042, .045, 16, 3), hule); fuelle.position.set(x, .022, -.02); g.add(fuelle);
@@ -168,9 +175,11 @@ function crearConsola() {
   const etStop = etiqueta("STOP", { ancho: .06, alto: .02, color: "#ffffff" }); etStop.rotation.x = -Math.PI / 2; etStop.position.y = .016; stop.add(etStop);
   botones.push({ accion: "STOP", malla: stop, yBase: stop.position.y, radio: .05 });
   // fila de botones
-  BOTONES.forEach((b, i) => {
-    const x = (i - (BOTONES.length - 1) / 2) * .088;
-    const m = caja(.072, .016, .042, estandar(b.color, .5), x, .008, .1, g);
+  const fila1 = BOTONES.filter(b => !b.fila), fila2 = BOTONES.filter(b => b.fila === 2);
+  BOTONES.forEach(b => {
+    const f = b.fila === 2 ? fila2 : fila1, i = f.indexOf(b);
+    const x = (i - (f.length - 1) / 2) * .088;
+    const m = caja(.072, .016, .042, estandar(b.color, .5), x, .008, b.fila === 2 ? .162 : .1, g);
     const et = etiqueta(b.texto, { ancho: .068, alto: .022, color: "#06101c", peso: 900 }); et.rotation.x = -Math.PI / 2; et.position.y = .0085; m.add(et);
     botones.push({ ...b, malla: m, yBase: m.position.y, radio: .045 });
   });
@@ -218,7 +227,7 @@ function crearPantalla() {
     ctx.fillText(d.seguro ? "SEGURO ARMADO · PUEDES MANEJAR" : d.seguroTxt, 64, 355);
     // líneas de información
     ctx.font = F(28, 600); let y = 420;
-    for (const [t, c] of [[d.sala, "#c9b8ff"], [d.plan, "#9feaff"], [d.voz, "#b6ffd8"], [d.aviso, "#ff7a8e"]]) {
+    for (const [t, c] of [[d.reto, "#ff8ae0"], [d.sala, "#c9b8ff"], [d.plan, "#9feaff"], [d.voz, "#b6ffd8"], [d.aviso, "#ff7a8e"]]) {
       if (!t) continue; ctx.fillStyle = c;
       let s = t; while (ctx.measureText(s).width > cv.width - 90 && s.length > 4) s = s.slice(0, -2);
       ctx.fillText(s === t ? s : s + "…", 44, y); y += 42; if (y > 580) break;
@@ -255,6 +264,8 @@ export function crearMundo() {
   const neon = arena.children.slice();                     // piso, rejilla, aro, montones y postes neón
   const obra = crearObra(); arena.add(obra);
   const gemelo = crearExcavadora("solida"); arena.add(gemelo.grupo);
+  const retos = new THREE.Group(); arena.add(retos);       // objetos de los retos (unidades del gemelo)
+  const efectosArena = new THREE.Group(); arena.add(efectosArena);   // polvo y lluvia sobre la obra
   const etGemelo = etiqueta("GEMELO EN VIVO", { ancho: 1.2, alto: .16, color: "#e8fbff", fondo: "rgba(6,14,28,.7)" });
   arena.add(etGemelo);
 
@@ -354,7 +365,23 @@ export function crearMundo() {
     gemelo.grupo.visible = etGemelo.visible = !vr;          // en VR vas DENTRO de la excavadora
     consola.grupo.visible = pantalla.malla.visible = baseMini.visible = soporteKai.visible = m !== "2d";
     if (!mr) { ancla.visible = false; reticula.visible = false; }
+    alModo.forEach(f => f(m));
+  }
+  const alModo = [];
+
+  /** Punta del cucharón en coordenadas de la arena (unidades del gemelo). En VR usa el brazo real de la cabina. */
+  const vPunta = new THREE.Vector3();
+  function puntaPala(destino = new THREE.Vector3()) {
+    const p = modoActual === "vr" ? brazoReal.punta : gemelo.punta;
+    p.getWorldPosition(vPunta); arena.updateWorldMatrix(true, false);
+    return destino.copy(arena.worldToLocal(vPunta));
+  }
+  /** Tierra en el cucharón: 0 (vacío) a 1 (lleno). */
+  function ponerCarga(f) {
+    for (const c of [brazoReal.carga, gemelo.carga]) { c.visible = f > .02; c.scale.y = Math.max(.01, f) * (c === gemelo.carga ? 1 : .9); }
   }
 
-  return { escena, puesto, arena, gemelo, consola, pantalla, soporteKai, centrar, anclar, ancla, anclaje, reticula, actualizar, modo };
+  return { escena, puesto, arena, gemelo, consola, pantalla, soporteKai, centrar, anclar, ancla, anclaje, reticula, actualizar, modo,
+    retos, efectosArena, cabina, cabReal, brazoReal, sol, solDia, cieloDia, decorado, obra, alModo, puntaPala, ponerCarga,
+    get modoActual() { return modoActual; } };
 }
