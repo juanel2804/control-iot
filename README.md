@@ -103,7 +103,16 @@ Liga aparte para la tablet o el proyector: https://juanel2804.github.io/control-
   Muestra quién mandó la orden, el `INSERT` en RDS con el ID real del historial, los pasos de DEMO («estado ✓ · historial ✗») y la señal del ESP32.
   Si el ESP32 no reporta telemetría, la orden se marca «sin señal: no llegó» en lugar de fingir el movimiento.
 - **Indicadores:** WSS, API AWS, RDS y ESP32 (telemetría de los últimos 12 s).
-- Archivos: `expo.html`, `css/expo.css`, `js/expo/expo.js` (sala, WSS e historial) y `js/expo/diagrama.js` (animación SVG). Reutiliza `js/monitoreo/api.js`, `config.js` y `fechas.js`.
+- **Show y carrera con la excavadora real (`js/expo/show.js`):**
+  - 🎙️ **KAI narrador:** comenta en vivo, como partido, los turnos y movimientos reales, avisa los últimos 10 s e invita al público a escanear cuando no hay nadie.
+    Usa la voz de OpenAI de la API (con la llave de la tablet) o la del navegador.
+  - 🏁 **Modo carrera:** pista física con conos en la mesa. El cronómetro arranca con la primera orden de quien tiene el turno; el juez marca **Cono +3 s** y **META** en la tablet.
+    Marcador grande y ranking del día (guardado en la tablet). Si se acaba el turno antes de la meta, cuenta como «no terminó».
+  - 🎬 **Modo SHOW:** cuenta regresiva y lanza una DEMO; mientras dura (eventos reales `demo_inicio` … `demo_fin`) la pantalla se pone de fiesta con luces, música, confeti y narración.
+    El mismo botón la detiene (`demo_cancelar`).
+  - El sonido se activa con un toque («Toca para sonido»), por regla del navegador.
+- Archivos: `expo.html`, `css/expo.css`, `js/expo/expo.js` (sala, WSS e historial), `js/expo/diagrama.js` (animación SVG) y `js/expo/show.js` (narrador, carrera y show).
+  Reutiliza `js/monitoreo/api.js`, `config.js`, `fechas.js` y `js/vr/sonido.js`.
 
 ## Realidad virtual y mixta (`vr.html`) · Meta Quest
 Liga: https://juanel2804.github.io/control-iot/vr.html. Se abre en el **navegador del Meta Quest** (WebXR, sin instalar nada). También aparece en Administración.

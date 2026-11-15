@@ -75,6 +75,26 @@
         <button type="button" class="ex-btn peligro" data-acc="cerrar" id="exCerrar">Cerrar sala</button>
       </div>
     </div>
+    <div class="ex-show" aria-label="Show y carrera">
+      <span class="ex-etq">Show y carrera <small>· con la excavadora real</small></span>
+      <div class="ex-show-fila">
+        <button type="button" class="ex-btn" id="shSonido">🔇 Toca para sonido</button>
+        <button type="button" class="ex-btn" id="shNarrador">🎙️ Narrador KAI</button>
+        <button type="button" class="ex-btn" id="shMusica">📻 Música</button>
+      </div>
+      <div class="ex-show-fila">
+        <select id="shDemo" class="ex-sel" aria-label="DEMO para el show"></select>
+        <button type="button" class="ex-btn primario" id="shShowBtn">🎬 SHOW</button>
+      </div>
+      <div class="ex-show-fila">
+        <button type="button" class="ex-btn" id="shCarreraBtn">🏁 Modo carrera</button>
+        <button type="button" class="ex-btn" id="shVuelta">🔁 Nueva vuelta</button>
+      </div>
+      <div class="ex-show-fila juez">
+        <button type="button" class="ex-btn peligro" id="shCono">🚧 Cono +3 s</button>
+        <button type="button" class="ex-btn primario" id="shMeta">🏁 META</button>
+      </div>
+    </div>
     <p class="ex-aviso" id="exAviso" role="status" aria-live="polite"></p>
   </section>
 
@@ -112,11 +132,25 @@
     <div class="ex-ultimo">
       <div><span class="ex-etq">Última orden</span><b id="exUltCmd">—</b><small id="exUltDet"></small></div>
       <div class="ex-hist"><span class="ex-etq">Guardado en RDS (historial)</span><ol id="exHist"></ol></div>
+      <aside class="sh-marcador" id="shMarcador" hidden aria-live="polite">
+        <span class="ex-etq">🏁 Carrera</span>
+        <b class="sh-corredor" id="shCorredor"></b>
+        <div class="sh-crono"><span id="shCrono">0,0</span><small>s</small></div>
+        <small class="sh-estado" id="shEstado"></small>
+        <span class="ex-etq">Ranking de hoy</span>
+        <ol class="sh-ranking" id="shRanking"></ol>
+        <button type="button" class="sh-borrar" id="shBorrar">Borrar ranking</button>
+      </aside>
     </div>
     <p class="ex-nota">Todo lo que se mueve aquí es un evento real del servidor. «Enviado al ESP32» no confirma que el motor se movió:
       eso solo lo puede reportar el propio ESP32.</p>
   </section>
 </main>
+<div class="sh-banner" id="shBanner" aria-live="polite"></div>
+<div class="sh-luces" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<div class="sh-destello" id="shDestello" aria-hidden="true"></div>
+<canvas class="sh-confeti" id="shConfeti" aria-hidden="true"></canvas>
+<p class="sh-narra" id="shNarra" aria-live="polite"></p>
 <footer class="ex-pie">Desarrollado por Juan Elpidio López García · 2026 · Implementación de soluciones IoT</footer>
 
 <script>

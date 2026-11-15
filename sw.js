@@ -1,10 +1,10 @@
 // Service worker de la app "Excavadora de Juan": permite instalarla y abrirla rápido.
 // Solo guarda la propia página; la API y el WebSocket siempre van a la red.
-const CACHE = "excavadora-v16";
+const CACHE = "excavadora-v17";
 const MONITOREO = ["config", "fechas", "validar", "api", "canal", "conectividad", "ultimo", "historial", "eventos", "sincronizador", "app"]
   .map(m => `./js/monitoreo/${m}.js`);
 const ARCHIVOS = ["./", "./index.html", "./css/gamer.css", "./js/control/gamer.js", "./js/control/sala.js", "./js/control/arena.js", "./css/monitoreo.css", ...MONITOREO, "./css/admin.css", "./js/admin/admin.js",
-  "./expo.html", "./css/expo.css", "./js/expo/expo.js", "./js/expo/diagrama.js",
+  "./expo.html", "./css/expo.css", "./js/expo/expo.js", "./js/expo/diagrama.js", "./js/expo/show.js",
   "./vr.html", "./css/vr.css", ...["app", "enlace", "mundo", "cabina", "xr", "voz", "ordenes", "asistente", "sonido", "efectos", "juegos", "guia"].map(m => `./js/vr/${m}.js`),
   "./manifest.webmanifest", "./img/iconos/icono-192.png", "./img/iconos/icono-512.png", "./img/iconos/favicon.svg"];
 const ALCANCE = new URL("./", self.location).pathname;

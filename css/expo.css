@@ -120,3 +120,62 @@ h1, h2, p, ol, ul { margin:0; }
 .ex-nota { font-size:12.5px; color:var(--suave); }
 .ex-pie { text-align:center; font-size:12px; color:var(--suave); padding:6px 0 10px; letter-spacing:.4px; }
 @media (prefers-reduced-motion: reduce) { .cable.activo, .ex-marca small, .nodo.pulso rect, .ex-hist li.nuevo { animation:none; } }
+
+/* =================== SHOW Y CARRERA (js/expo/show.js) =================== */
+.ex-show { margin-top:14px; padding-top:12px; border-top:1px dashed var(--borde); display:grid; gap:8px; }
+.ex-show .ex-etq small { text-transform:none; letter-spacing:0; font-weight:600; }
+.ex-show-fila { display:flex; flex-wrap:wrap; gap:6px; }
+.ex-show-fila .ex-btn { flex:1 1 auto; }
+.ex-show-fila.juez .ex-btn { font-size:20px; padding:14px 10px; }
+.ex-btn.on { box-shadow:inset 0 0 0 2px var(--lima); color:var(--lima); }
+.ex-sel { flex:1 1 140px; min-width:0; padding:9px 10px; background:rgba(0,0,0,.4); color:var(--texto); border:1px solid var(--borde); font:inherit; }
+
+/* marcador de la carrera: flota arriba a la derecha del diagrama, se lee de lejos */
+.sh-marcador { padding:10px 14px; display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto auto 1fr; column-gap:18px; row-gap:2px;
+  background:rgba(8,10,16,.94); border:2px solid var(--maq); box-shadow:0 0 30px rgba(255,196,0,.25); }
+.sh-marcador > .ex-etq:first-child, .sh-corredor, .sh-crono, .sh-estado { grid-column:1; }
+.sh-marcador > .ex-etq:nth-of-type(2) { grid-column:2; grid-row:1; }
+.sh-ranking { grid-column:2; grid-row:2 / 5; align-self:start; }
+.sh-borrar { grid-column:2; }
+body.carrera .ex-hist { display:none; }
+.sh-corredor { font-size:clamp(20px, 2.2vw, 30px); color:var(--maq); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sh-crono { display:flex; align-items:baseline; gap:6px; font-size:clamp(46px, 5.6vw, 84px); font-weight:800; line-height:1; font-variant-numeric:tabular-nums; color:var(--holo); text-shadow:0 0 18px rgba(41,230,255,.5); }
+.sh-crono small { font-size:.35em; color:var(--suave); }
+.sh-estado { color:var(--suave); min-height:1.2em; }
+.sh-ranking { list-style:none; padding:0; display:grid; gap:3px; font-size:17px; }
+.sh-ranking li { display:flex; justify-content:space-between; gap:10px; padding:3px 6px; background:rgba(255,255,255,.04); }
+.sh-ranking li:first-child { background:rgba(255,196,0,.14); color:var(--maq); }
+.sh-ranking b { font-variant-numeric:tabular-nums; }
+.sh-borrar { justify-self:end; background:none; border:0; color:var(--suave); font-size:11px; cursor:pointer; text-decoration:underline; }
+
+/* letrero grande del show y cuenta regresiva */
+.sh-banner { position:fixed; left:50%; bottom:86px; transform:translateX(-50%); z-index:30; pointer-events:none; font-family:var(--estencil);
+  font-size:clamp(28px, 4vw, 56px); color:var(--maq); text-shadow:0 0 24px rgba(255,196,0,.8), 0 0 4px #000; white-space:nowrap; }
+body.cuenta .sh-banner { bottom:auto; top:30%; font-size:clamp(120px, 18vw, 260px); color:#fff; animation:cuenta .9s infinite; }
+@keyframes cuenta { 0% { transform:translateX(-50%) scale(1.4); opacity:0; } 30% { opacity:1; } 100% { transform:translateX(-50%) scale(.9); opacity:.2; } }
+
+/* luces de fiesta (solo durante la DEMO del show) */
+.sh-luces { position:fixed; inset:0; z-index:20; pointer-events:none; overflow:hidden; opacity:0; transition:opacity .6s; }
+body.fiesta .sh-luces { opacity:1; }
+.sh-luces i { position:absolute; bottom:-20vh; width:26vw; height:140vh; transform-origin:50% 100%; mix-blend-mode:screen; filter:blur(8px);
+  background:linear-gradient(0deg, rgba(255,255,255,.0), currentColor 40%, rgba(255,255,255,0)); opacity:.28; animation:barrido 3.2s ease-in-out infinite alternate; }
+.sh-luces i:nth-child(1) { left:2%;  color:#ff3ec8; animation-delay:0s; }
+.sh-luces i:nth-child(2) { left:28%; color:#29e6ff; animation-delay:-.8s; animation-duration:2.6s; }
+.sh-luces i:nth-child(3) { left:52%; color:#ffc400; animation-delay:-1.6s; }
+.sh-luces i:nth-child(4) { left:76%; color:#b6ff3e; animation-delay:-2.4s; animation-duration:2.9s; }
+@keyframes barrido { from { transform:rotate(-28deg); } to { transform:rotate(28deg); } }
+body.fiesta .ex-panel { animation:borde-fiesta 1.2s linear infinite; }
+@keyframes borde-fiesta { 0% { border-color:#ff3ec8; } 33% { border-color:#29e6ff; } 66% { border-color:#ffc400; } 100% { border-color:#ff3ec8; } }
+
+/* destello de pantalla (STOP, cono tirado, pasos del show) */
+.sh-destello { position:fixed; inset:0; z-index:25; pointer-events:none; opacity:0; box-shadow:inset 0 0 140px 30px rgba(255,255,255,.5); }
+.sh-destello.rojo { box-shadow:inset 0 0 160px 40px rgba(255,59,78,.75); }
+.sh-destello.show { box-shadow:inset 0 0 160px 40px rgba(255,62,200,.55); }
+.sh-destello.va { animation:destello .7s ease-out; }
+@keyframes destello { 0% { opacity:1; } 100% { opacity:0; } }
+
+.sh-confeti { position:fixed; inset:0; z-index:40; pointer-events:none; }
+.sh-narra { position:fixed; left:50%; bottom:34px; transform:translateX(-50%); z-index:35; max-width:min(900px, 92vw); padding:8px 16px; pointer-events:none;
+  background:rgba(8,10,16,.88); border-left:4px solid var(--holo); font-size:clamp(15px, 1.5vw, 20px); color:var(--texto); }
+.sh-narra:empty { display:none; }
+@media (prefers-reduced-motion: reduce) { .sh-luces i, body.fiesta .ex-panel, body.cuenta .sh-banner { animation:none; } }

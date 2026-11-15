@@ -5,6 +5,7 @@ import { obtenerHistorial, obtenerJSON } from "../monitoreo/api.js";
 import { API_BASE, CANAL, VEHICULO } from "../monitoreo/config.js";
 import { aInstante, hora } from "../monitoreo/fechas.js";
 import { detalle, estadoNodo, pulso, viajar } from "./diagrama.js";
+import { crearShow } from "./show.js";
 
 const $ = id => document.getElementById(id);
 const leer = k => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
@@ -86,6 +87,7 @@ function recibir(m) {
     case "error": if (m.detalle) aviso(m.detalle); break;
     case "sala_error": if (m.detalle) aviso(m.detalle); break;
   }
+  show?.evento(m);                                         // narrador, carrera y modo SHOW
 }
 
 /* ---------- animaciones según el evento ---------- */
@@ -281,6 +283,7 @@ let tAviso = null;
 function aviso(t) { const a = $("exAviso"); a.textContent = t; clearTimeout(tAviso); tAviso = setTimeout(() => (a.textContent = ""), 5000); }
 
 /* ============================ arranque ============================ */
+const show = crearShow({ E, enviar, aviso, API_BASE, VEHICULO });
 const fReloj = new Intl.DateTimeFormat("es-MX", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 setInterval(() => { $("exReloj").textContent = fReloj.format(new Date()); revisarEsp(); }, 1000);
 $("exReloj").textContent = fReloj.format(new Date());
