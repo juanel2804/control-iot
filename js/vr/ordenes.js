@@ -101,6 +101,7 @@ export async function procesarFrase(texto) {
     return { sub: `“${texto}” → ${ETIQUETA[o.c]} ${o.ms / 1000} s`, dicho: o.c.startsWith("AUX") || o.c === "ENCENDER_APAGAR" ? `${DICHO[o.c]}.` : `${DICHO[o.c]} ${segundos(o.ms)}.` };
   }
   let r = null, quien = "RUTINAS";
+  const juegoAntes = enJuego();
   if (conNube() && llave() && await hayCopiloto()) {
     try {
       const resp = await fetch(`${API_BASE}/vehiculos/${vehiculo}/copiloto`, { method: "POST",
@@ -109,6 +110,8 @@ export async function procesarFrase(texto) {
     } catch {}
   }
   if (!r) r = planLocal(texto);
+  // si mientras pensaba empezó o terminó un reto, la orden ya no es para la misma máquina: no se ejecuta
+  if (enJuego() !== juegoAntes) return { sub: `“${texto}” → descartada (cambió el modo)`, dicho: "Cambió el modo mientras lo pensaba, así que no lo ejecuto. Repítemelo." };
   if (!r.pasos?.length) return { sub: `“${texto}” → no entendí`, dicho: "No entendí la orden. Prueba con algo como: avanza dos segundos y sube la pala." };
   ejecutarPlan(r.pasos);
   return { sub: `“${texto}” → ${quien}: ${r.explicacion} (${r.pasos.length} pasos)`,

@@ -64,7 +64,7 @@ export function crearGuia({ mundo, gem, kai, juegos, enXR = () => true, espectad
     if (d > ZONA.alto && s && (E.enJuego() || E.actual() || enXR)) {
       const sale = (gem.x * Math.sin(gem.rumbo) + gem.z * Math.cos(gem.rumbo)) * s > 0;   // ¿el movimiento la aleja del centro?
       if (sale && ahora - Z.frenado > 1500) {
-        Z.frenado = ahora; E.alto(); efecto.error();
+        Z.frenado = ahora; E.enJuego() ? E.altoLocal() : E.alto(); efecto.error();
         decir("Saliste de la zona segura, así que frené. Gira hacia el centro para regresar.", true);
         E.aviso("ZONA SEGURA: frenado automático", 5000);
       }

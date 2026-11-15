@@ -8,7 +8,7 @@ import * as THREE from "three";
 import { crearMundo, moverGemelo, nuevoEstado, ARENA_Z } from "./mundo.js";
 import { crearControlXR } from "./xr.js";
 import * as E from "./enlace.js";
-import { procesarFrase, bienvenida } from "./ordenes.js";
+import { procesarFrase, bienvenida, interpretar } from "./ordenes.js";
 import { voz, empezar, terminar, prepararMicro, revisarServicio, flujoMicro } from "./voz.js";
 import { crearAsistente } from "./asistente.js";
 import * as son from "./sonido.js";
@@ -61,15 +61,16 @@ function botonExtra(accion) {
 }
 /** Frases de retos, tutorial, clima y radio; si no es ninguna, va al intérprete de órdenes. */
 async function frase(t) {
-  if (!/\b(alto|stop|detente|frena)\b/i.test(t)) {
+  // el STOP por voz se detecta igual que en el intérprete y siempre gana
+  if (interpretar(t)?.c !== "DETENER" && !/\b(alto|stop|detente|frena)\b/i.test(t)) {
     const r = guia.comandoVoz(t) || juegos.comandoVoz(t) || efectos.comandoVoz(t);
     if (r) return r;
   }
   return procesarFrase(t);
 }
-let vozTxt = "", topeEscucha = null;
+let vozTxt = "", topeEscucha = null, juegoAlHablar = false;
 async function hablar(porToque = false) {
-  kai.callar();
+  kai.callar(); juegoAlHablar = E.enJuego();
   if (await empezar()) {
     vozTxt = porToque ? "MIC: escuchando… toca a KAI otra vez para mandar" : "MIC: escuchando… suelta para mandar";
     kai.estado("escucha"); kai.oyendo("…"); kai.escucharMic(flujoMicro()); xr?.vibrarTodos(.2, 30);
@@ -82,6 +83,8 @@ async function soltarHablar() {
   vozTxt = "MIC: transcribiendo…"; kai.estado("piensa"); kai.dejarMic();
   const t = await terminar();
   if (!t) { vozTxt = "MIC: no escuché nada"; kai.decir("No te escuché. ¿Me lo repites?", { tu: "" }); return; }
+  // si el reto empezó o terminó mientras hablabas, la orden no se manda a otra máquina (salvo STOP)
+  if (E.enJuego() !== juegoAlHablar && interpretar(t)?.c !== "DETENER") { vozTxt = "MIC: descartada (cambió el modo)"; kai.decir("Cambió el modo mientras hablabas. Repítemelo, por favor.", { tu: t }); return; }
   kai.oyendo(t);
   const r = await frase(t);
   vozTxt = "MIC: " + r.sub; if (r.dicho) kai.decir(r.dicho, { tu: t }); else kai.oyendo(t);
@@ -115,6 +118,7 @@ async function entrar(tipo) {
   if (!navigator.xr) return;
   kai.desbloquear(); son.desbloquear();   // el audio solo se puede activar dentro del clic
   const mr = tipo === "mr";
+  if (mr) { juegos.terminar(null, true); guia.terminarTutorial(false, false); }   // en realidad mixta se maneja la real: nada de retos
   try {
     const s = await navigator.xr.requestSession(mr ? "immersive-ar" : "immersive-vr", {
       requiredFeatures: ["local-floor"], optionalFeatures: ["hand-tracking", "hit-test", "layers"] });
@@ -252,10 +256,12 @@ renderer.setAnimationLoop((ahora, frame) => {
     }
     kai.actualizar(dt, ojo);
     salida = xr ? xr.cuadro(dt, frame) : null;
+    if (E.bloqueado() && !salida?.entrada && !teclas.size) E.liberarBloqueo();
     mundo.pantalla.dibujar(datosHUD(salida));
     camXR.getWorldPosition(ojo);
   } else {
     camara2D(dt); camara.getWorldPosition(ojo);
+    if (E.bloqueado() && !teclas.size) E.liberarBloqueo();
     if (ahora - ultimo2D > 150) { ultimo2D = ahora; pintar2D(); }
   }
   mundo.actualizar(gem, vivo.c, E.ETIQUETA[vivo.c] || vivo.c || "", dt, ojo);

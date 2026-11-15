@@ -217,7 +217,7 @@ export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSolt
     const mejor = cand.sort((x, y) => y.f - x.f)[0] || null;
     const cur = actual(), org = origenActual();
     if (mejor) {
-      if (cur !== mejor.c || org !== "manual") { mantener(mejor.c, "manual"); vibrar(mejor.m, .35, 30); }
+      if (cur !== mejor.c || org !== "manual") { mantener(mejor.c, "manual"); if (actual() === mejor.c) vibrar(mejor.m, .35, 30); }
       salida.origen = mejor.de;
       const ahora = performance.now();
       if (ahora - ultimoMotor > 250) { ultimoMotor = ahora; vibrar(mejor.m, .07, 40); }   // el "motor" se siente
@@ -225,6 +225,7 @@ export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSolt
       soltar(); if (salida.seguro && !seguro) vibrarTodos(.8, 90);
       salida.origen = "";
     }
+    salida.entrada = !!mejor;                                       // ¿hay palanca o stick activo? (bloqueo tras un reto)
     salida.seguro = seguro;
     salida.seguroTxt = conManos && !controles.length ? "PELLIZCA UNA PALANCA PARA MANEJAR"
       : controles.length ? "MANTÉN LOS DOS GRIPS PARA MANEJAR" : "TOMA LOS CONTROLES";

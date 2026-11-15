@@ -53,12 +53,17 @@ export const simulando = () => SOLO_SIM || juego || !ws || ws.readyState !== 1 |
 export const conNube = () => !SOLO_SIM && !!ws && ws.readyState === 1 && estado.autorizado;
 
 /* ---------------- modo juego: retos y tutorial solo en el gemelo, nunca en la excavadora real ---------------- */
-let juego = false;
+let juego = false, bloqueo = false, realHasta = 0;
 export const enJuego = () => juego;
+/** Al salir de un reto, las palancas/teclas sostenidas NO pasan a la real: hay que soltar todo primero. */
+export const bloqueado = () => bloqueo;
+export function liberarBloqueo() { bloqueo = false; }
 export function modoJuego(v) {
   v = !!v; if (v === juego) return;
-  if (mov.c || estado.plan) alto();         // frena la real solo si ESTE control la estaba moviendo (no estorba el turno de otro)
+  // frena la real solo si ESTE control la estaba moviendo (incluye un pulso que aún corre): no estorba el turno de otro
+  if (!juego && (mov.c || estado.plan || performance.now() < realHasta)) alto();
   juego = v; cancelarPlan(); cortarRenovar(); mov.c = null; mov.origen = null;
+  if (!v) bloqueo = true;
   verComando("DETENER"); emitir("juego", v);
 }
 export const espEnLinea = () => Date.now() - estado.esp.ultima < 12000;
@@ -137,8 +142,13 @@ export const actual = () => mov.c;
 export const origenActual = () => mov.origen;
 
 /** Movimiento continuo mientras se mantiene (se renueva cada 250 ms). */
+let avisoBloqueo = 0;
 export function mantener(c, origen = "manual", topeMs = 0) {
   if (mov.c === c && mov.origen === origen) return;
+  if (bloqueo && origen === "manual") {
+    if (performance.now() - avisoBloqueo > 3000) { avisoBloqueo = performance.now(); aviso("Suelta las palancas para retomar el control real", 3000); }
+    return;
+  }
   if (origen !== "plan") cancelarPlan();
   cortarRenovar();
   mov.c = c; mov.origen = origen;
@@ -156,13 +166,18 @@ export function soltar() {
 export function pulso(c, ms, origen = "manual") {
   if (origen !== "plan") cancelarPlan();
   cortarRenovar(); mov.c = null; mov.origen = null;
+  if (!simulando()) realHasta = performance.now() + ms;
   mandar(c, Math.round(ms));
 }
 /** STOP: siempre se manda, aunque no haya nada en movimiento. */
 export function alto() {
   cancelarPlan(); cortarRenovar(); mov.c = null; mov.origen = null;
-  mandar("DETENER", 0); emitir("alto");
+  if (juego && conNube()) { ws.send(JSON.stringify({ tipo: "control", c: "DETENER", ms: 0 })); verComando("DETENER", 0); }   // el STOP siempre llega a la real, aun en un reto
+  else mandar("DETENER", 0);
+  emitir("alto");
 }
+/** Frena solo el gemelo (retos y zona segura dentro de un reto). */
+export function altoLocal() { cancelarPlan(); cortarRenovar(); mov.c = null; mov.origen = null; verComando("DETENER", 0); }
 
 /* ---------------- planes del copiloto: paso por paso con pulsos ---------------- */
 export function cancelarPlan() { if (estado.plan) { planId++; estado.plan = null; } }
