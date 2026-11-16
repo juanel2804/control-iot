@@ -301,7 +301,7 @@ function estado(s) {
 function recibir(m) {
   switch (m.tipo) {
     case "estado_inicial":
-      if (m.demo_en_ejecucion) SL.demo = { id: m.demo_en_ejecucion, paso: "…", total: null };
+      SL.demo = m.demo_en_ejecucion ? { id: m.demo_en_ejecucion, paso: "…", total: null } : null;   // al reconectar, la DEMO pudo acabar
       if (m.sala) estado(m.sala);
       break;
     case "sala": estado(m); break;

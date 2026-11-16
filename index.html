@@ -768,9 +768,12 @@ const TECLAS = { w: "AVANZAR", arrowup: "AVANZAR", s: "RETROCEDER", arrowdown: "
 addEventListener("keydown", e => {
   if (e.target.matches("input")) return;
   if (e.key === " ") { e.preventDefault(); return detenerTodo(); }
-  const c = TECLAS[e.key.toLowerCase()]; if (c && !e.repeat) { e.preventDefault(); sostener(c); }
+  const c = TECLAS[e.key.toLowerCase()]; if (c && !e.repeat) { e.preventDefault(); sostener(c); porTecla = c; }
 });
-addEventListener("keyup", e => { const c = TECLAS[e.key.toLowerCase()]; if (c) soltar(c); });
+addEventListener("keyup", e => { const c = TECLAS[e.key.toLowerCase()]; if (c) { if (c === porTecla) porTecla = null; soltar(c); } });
+// si la ventana pierde el foco con una tecla oprimida (Alt+Tab, clic en otra app), el keyup nunca llega: alto
+let porTecla = null;
+addEventListener("blur", () => { if (porTecla && mov.c === porTecla) detenerTodo(); porTecla = null; });
 
 /* ============================ IA: copiloto + rutinas ============================ */
 let copilotoNube = false;

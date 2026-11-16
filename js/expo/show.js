@@ -179,6 +179,10 @@ export function crearShow({ E, enviar, aviso, API_BASE, VEHICULO }) {
   /* ---------------- eventos reales del servidor ---------------- */
   function evento(m) {
     const s = E.sala, t = s?.abierta ? s.turno : null;
+    if (m.tipo === "estado_inicial") {          // al (re)conectar: ¿hay una DEMO corriendo? así el botón la puede parar
+      S.demo = m.demo_en_ejecucion || null; $("shShowBtn").textContent = S.demo ? "⏹ Parar show" : "🎬 SHOW";
+      if (!S.demo) fiesta(false);
+    }
     if (m.tipo === "sala" || m.tipo === "estado_inicial") {
       const id = t ? `${t.id}:${t.total_ms}` : null;
       if (id !== S.turnoId) {
