@@ -183,3 +183,12 @@ MONITOREO no la usa. El navegador nunca se conecta a RDS: todo pasa por la API.
 
 ## API
 Por defecto usa `https://100-63-187-92.sslip.io`; se puede cambiar con `?api=<URL>`. El vehículo se elige con `?v=<id>` (1 por defecto).
+
+## Acceso para el público
+Liga: **https://juanel2804.github.io/control-iot/** · QR listo para imprimir en [`docs/qr/qr-control.png`](docs/qr/qr-control.png).
+Sin llave cualquiera puede ver el MONITOREO y formarse en la 🎟️ Sala; mover la excavadora real requiere la llave o un turno.
+
+## Créditos y contacto
+Desarrollado por **Juan Elpidio López García** · Ingeniería en Sistemas Computacionales · TecNM Campus Pachuca · 2026
+- LinkedIn: https://www.linkedin.com/in/juan-elpidio-l%C3%B3pez-garc%C3%ADa-96310934a/
+- GitHub: https://github.com/juanel2804
