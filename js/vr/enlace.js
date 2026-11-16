@@ -29,10 +29,10 @@ export const RENOVAR_MS = 250;
 export const llave = () => leer("iot_api_key", "");
 
 export const CMDS = ["AVANZAR", "RETROCEDER", "GIRO_IZQUIERDA", "GIRO_DERECHA", "ROTACION_IZQUIERDA", "ROTACION_DERECHA",
-  "PALA_ARRIBA", "PALA_ABAJO", "ENCENDER_APAGAR", "AUX_1", "AUX_2", "AUX_3"];
+  "PALA_ARRIBA", "PALA_ABAJO", "ENCENDER_APAGAR"];   // AUX_1..3 ocultos: no tienen nada conectado
 export const ETIQUETA = { AVANZAR: "AVANZAR", RETROCEDER: "REVERSA", GIRO_IZQUIERDA: "GIRO IZQ.", GIRO_DERECHA: "GIRO DER.",
   ROTACION_IZQUIERDA: "CABINA IZQ.", ROTACION_DERECHA: "CABINA DER.", PALA_ARRIBA: "SUBIR PALA", PALA_ABAJO: "BAJAR PALA",
-  ENCENDER_APAGAR: "PRENDER / APAGAR", AUX_1: "AUX 1", AUX_2: "AUX 2", AUX_3: "AUX 3", DETENER: "DETENIDO" };
+  ENCENDER_APAGAR: "PRENDER / APAGAR", DETENER: "DETENIDO" };
 
 /* ---------------- estado compartido (lo pintan la pantalla del HUD y la página 2D) ---------------- */
 export const estado = {

@@ -104,7 +104,6 @@ export function crearControlXR(renderer, mundo, { estadoGemelo, alHablar, alSolt
       case "KAI": alTocarKai(); break;
       case "STOP": alto(); vibrarTodos(1, 150); break;
       case "ENCENDER_APAGAR": pulso(b.accion, 400); break;
-      case "AUX_1": case "AUX_2": case "AUX_3": pulso(b.accion, 500); break;
       case "VOZ": alHablar(); break;
       case "CENTRAR": alCentrar(); break;
       default: alBoton(b.accion);                                  // RETO, CLIMA, RADIO

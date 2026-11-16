@@ -2,7 +2,7 @@
 
 App web de la excavadora IoT («Excavadora de Juan») con dos vistas en el mismo sitio y el mismo repositorio:
 
-- **CONTROL (4.1):** joysticks de tracción y de cabina/pala, STOP prioritario, 12 botones del catálogo, DEMO, IA, gestos, Arena y sala de turnos.
+- **CONTROL (4.1):** joysticks de tracción y de cabina/pala, STOP prioritario, 9 botones (los AUX 1–3 están ocultos: no tienen nada conectado), DEMO, IA, gestos, Arena y sala de turnos.
 - **MONITOREO (4.2):** muestra en tiempo real el último movimiento reportado y los **10 movimientos individuales más recientes guardados en Amazon RDS**, con fecha y hora.
 
 Es solo frontend (HTML5 + CSS3 + Bootstrap 5 + JavaScript ES6). Consume la API existente en AWS (FastAPI, 21 servicios REST y Amazon RDS MySQL)
@@ -125,7 +125,7 @@ Usa el mismo WebSocket y la misma llave que el control normal (`localStorage` de
   Al entrar te da la bienvenida con el estado del sistema. **Tócalo** (con el dedo, el control o el gatillo) para hablarle, o usa **B**. Ejecuta las órdenes y te responde en voz.
   Contesta «¿cómo está la conexión?» y «¿quién eres?», y avisa solo de lo importante: enlace perdido o recuperado, ESP32 fuera o en línea, STOP y rechazos de la sala.
   Su voz sale de `POST /vehiculos/{id}/voz/habla` (OpenAI TTS, voz *onyx*); sin API, usa la voz del navegador.
-- **Consola:** dos palancas que se agarran con el grip o pellizcando con la mano (izquierda = orugas, derecha = brazo y cabina; adelante = avanzar / subir pala), STOP tipo hongo y los botones PRENDER, AUX 1-3, VOZ (mantener) y CENTRAR. Los botones se aprietan tocándolos o apuntándolos con el gatillo.
+- **Consola:** dos palancas que se agarran con el grip o pellizcando con la mano (izquierda = orugas, derecha = brazo y cabina; adelante = avanzar / subir pala), STOP tipo hongo y los botones PRENDER, VOZ (mantener) y CENTRAR (los AUX 1-3 se quitaron porque no tienen nada conectado). Los botones se aprietan tocándolos o apuntándolos con el gatillo.
 - **Hombre muerto:** los sticks solo mueven la excavadora mientras se mantienen **los dos grips**. Con las palancas, el seguro es tenerlas agarradas. Si sueltas, se manda DETENER.
   También se manda alto al quitarse las gafas, al abrir el menú del sistema o al salir de la sesión. Sigue aplicando el tope de 20 s del ESP32.
 - **Botones:** A = STOP · B = mantener para hablar · X = prender/apagar · Y = centrar la consola frente a ti.

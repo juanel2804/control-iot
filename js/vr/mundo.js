@@ -137,7 +137,6 @@ const MAPA_PALANCAS = {
 };
 export const BOTONES = [
   { accion: "ENCENDER_APAGAR", texto: "PRENDER", color: AMBAR },
-  { accion: "AUX_1", texto: "AUX 1", color: 0x8a7dff }, { accion: "AUX_2", texto: "AUX 2", color: 0x8a7dff }, { accion: "AUX_3", texto: "AUX 3", color: 0x8a7dff },
   { accion: "VOZ", texto: "VOZ", color: VERDE, mantener: true },
   { accion: "CENTRAR", texto: "CENTRAR", color: NEON },
   // segunda fila: retos (solo gemelo), clima y radio
@@ -152,7 +151,7 @@ function crearConsola() {
   const hule = estandar(0x0f1012, 0, { roughness: .95, metalness: 0 }), empuñadura = estandar(0x1a1b1e, 0, { roughness: .6 });
   for (const x of [-.215, .215]) caja(.15, .06, .32, cuerpo, x, -.03, .0, g, bordes);          // descansabrazos con joystick
   caja(.13, .05, .14, cuerpo, 0, -.025, -.03, g, bordes);                                       // base del STOP
-  caja(.6, .03, .07, cuerpo, 0, -.012, .1, g, bordes);                                           // panel de botones
+  caja(.3, .03, .07, cuerpo, 0, -.012, .1, g, bordes);                                           // panel de botones (sin los AUX)
   caja(.3, .03, .06, cuerpo, 0, -.012, .162, g, bordes);                                         // segunda fila
   const palancas = [], botones = [];
   for (const [nombre, x, titulo] of [["orugas", -.215, "ORUGAS"], ["brazo", .215, "BRAZO · CABINA"]]) {

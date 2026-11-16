@@ -173,7 +173,7 @@ function vistaComandos() {
     else ejecutar(pedir("POST", `/vehiculos/${A.vehiculo}/comandos`, cuerpo), "Comando creado", recargar);
   }, ed && (() => { A.editando = null; pintar(); }));
   return [selectorVehiculo(), tabla(["ID", "Nombre", "Código", "Estado", "Descripción", ""], filas), form,
-    h("p", { class: "nota" }, "Los botones de CONTROL usan los 12 comandos de la excavadora; un comando nuevo queda en el catálogo y se puede usar en las DEMO.")];
+    h("p", { class: "nota" }, "Los botones de CONTROL usan los 8 movimientos y prender/apagar (los AUX están ocultos: no tienen nada conectado); un comando nuevo queda en el catálogo y se puede usar en las DEMO.")];
 }
 
 function vistaDemos() {

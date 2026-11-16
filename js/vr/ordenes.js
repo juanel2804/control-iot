@@ -15,11 +15,9 @@ export function interpretar(frase) {
   const t = " " + limpio.replace(/\bsin parar\b/g, " ") + " ", hay = re => re.test(t);
   if (hay(/\b(alto|parate|parale|detente|deten|detener|stop|frena|quieto)\b/) || /^(para|parar|ya)$/.test(limpio)) return { c: "DETENER" };
   let c = null;
-  const aux = t.match(/\b(auxiliar|aux)\s+(1|2|3|uno|dos|tres)\b/);
   const izq = hay(/\bizquierda\b/), der = hay(/\bderecha\b/);
   if (hay(/\b(prende|prender|enciende|encender|apaga|apagar)\b/)) return { c: INTERRUPTOR, ms: PULSO_INTERRUPTOR };
-  if (aux) c = `AUX_${NUM[aux[2]] || aux[2]}`;
-  else if (hay(/\b(sube|subir|subela|levanta|arriba)\b/)) c = "PALA_ARRIBA";
+  if (hay(/\b(sube|subir|subela|levanta|arriba)\b/)) c = "PALA_ARRIBA";
   else if (hay(/\b(baja|bajar|bajala|abajo)\b/)) c = "PALA_ABAJO";
   else if (hay(/\b(cabina|torre|rota|rotar|voltea)\b/) && (izq || der)) c = izq ? "ROTACION_IZQUIERDA" : "ROTACION_DERECHA";
   else if (izq) c = "GIRO_IZQUIERDA"; else if (der) c = "GIRO_DERECHA";
@@ -65,7 +63,7 @@ async function hayCopiloto() {
 /* ---------------- lo que dice KAI ---------------- */
 const DICHO = { AVANZAR: "Avanzando", RETROCEDER: "En reversa", GIRO_IZQUIERDA: "Girando a la izquierda", GIRO_DERECHA: "Girando a la derecha",
   ROTACION_IZQUIERDA: "Rotando la cabina a la izquierda", ROTACION_DERECHA: "Rotando la cabina a la derecha", PALA_ARRIBA: "Subiendo la pala",
-  PALA_ABAJO: "Bajando la pala", ENCENDER_APAGAR: "Botón de encendido", AUX_1: "Auxiliar uno", AUX_2: "Auxiliar dos", AUX_3: "Auxiliar tres" };
+  PALA_ABAJO: "Bajando la pala", ENCENDER_APAGAR: "Botón de encendido" };
 const segundos = ms => ms === 500 ? "medio segundo" : ms === 1000 ? "un segundo" : `${ms / 1000} segundos`;
 
 /** Frase de estado del sistema (para "¿cómo está la conexión?" y la bienvenida). */
@@ -98,7 +96,7 @@ export async function procesarFrase(texto) {
   if (corta) {
     if (o.ms === 0) { mantener(o.c, "voz", 20000); return { sub: `“${texto}” → ${ETIQUETA[o.c]} (hasta “alto”)`, dicho: `${DICHO[o.c]} sin parar. Dime alto cuando quieras.` }; }
     pulso(o.c, o.ms, "voz");
-    return { sub: `“${texto}” → ${ETIQUETA[o.c]} ${o.ms / 1000} s`, dicho: o.c.startsWith("AUX") || o.c === "ENCENDER_APAGAR" ? `${DICHO[o.c]}.` : `${DICHO[o.c]} ${segundos(o.ms)}.` };
+    return { sub: `“${texto}” → ${ETIQUETA[o.c]} ${o.ms / 1000} s`, dicho: o.c === "ENCENDER_APAGAR" ? `${DICHO[o.c]}.` : `${DICHO[o.c]} ${segundos(o.ms)}.` };
   }
   let r = null, quien = "RUTINAS";
   const juegoAntes = enJuego();
@@ -106,7 +104,7 @@ export async function procesarFrase(texto) {
     try {
       const resp = await fetch(`${API_BASE}/vehiculos/${vehiculo}/copiloto`, { method: "POST",
         headers: { "Content-Type": "application/json", "X-API-Key": llave() }, body: JSON.stringify({ texto }) });
-      if (resp.ok) { r = await resp.json(); quien = "CLAUDE"; }
+      if (resp.ok) { r = await resp.json(); r.pasos = (r.pasos || []).filter(p => !/^AUX_/i.test(p.comando)); quien = "CLAUDE"; }   // los AUX están ocultos
     } catch {}
   }
   if (!r) r = planLocal(texto);

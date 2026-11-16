@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Excavadora de Juan · Control y Monitoreo IoT 4.2</title>
-<meta name="description" content="Control y monitoreo en tiempo real de la excavadora IoT: joysticks, 12 botones, DEMO, último movimiento e historial de RDS.">
+<meta name="description" content="Control y monitoreo en tiempo real de la excavadora IoT: joysticks, botones, DEMO, último movimiento e historial de RDS.">
 <meta name="theme-color" content="#05070b">
 <meta name="color-scheme" content="dark">
 <meta name="mobile-web-app-capable" content="yes">
@@ -104,7 +104,7 @@ nav button[hidden] { display:none; }
   background:radial-gradient(circle at 35% 30%, #fff, #9fe9ff 30%, #2aa7c7 70%, #0d4a5c); box-shadow:0 8px 24px rgba(0,0,0,.6), 0 0 22px rgba(62,230,255,.35); }
 .stick.activo { border-color:var(--cian); box-shadow:inset 0 0 40px rgba(0,0,0,.6), 0 0 30px rgba(62,230,255,.35); }
 .centro { display:flex; flex-direction:column; align-items:center; gap:12px; }
-.aux { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:min(30vw, 200px); }
+.aux { display:grid; grid-template-columns:1fr; gap:8px; width:min(30vw, 200px); }
 
 .stop { width:min(24vh, 120px); aspect-ratio:1; border-radius:50%; cursor:pointer; touch-action:manipulation;
   border:2px solid rgba(255,255,255,.3); background:radial-gradient(circle at 35% 30%, #ff8592, #ff4d5e 45%, #a1122c);
@@ -248,7 +248,7 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
         <div class="sub" id="sub">Toca = pulso · Mantén = continuo</div>
       </div>
       <div class="der">
-        <div class="seg" id="segModo"><button data-v="sticks">🕹 Joysticks</button><button data-v="botones">🔲 12 botones</button></div>
+        <div class="seg" id="segModo"><button data-v="sticks">🕹 Joysticks</button><button data-v="botones">🔲 Botones</button></div>
         <div class="seg" id="segPulso"><button data-v="200">0.2s</button><button data-v="500">0.5s</button><button data-v="1000">1s</button></div>
       </div>
     </div>
@@ -575,15 +575,16 @@ function led(id, t, e) { const l = $(id); l.className = "led" + (e ? " " + e : "
 function aviso(t) { const a = $("aviso"); a.textContent = t; a.hidden = false; clearTimeout(a._t); a._t = setTimeout(() => a.hidden = true, 3500); }
 const sinAcentos = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 
-/* los 12 comandos de la retro (mismo orden que el ESP32) */
+/* los comandos de la retro que se usan (mismo orden que el ESP32) */
 const CMDS = [
   ["AVANZAR", "▲", "Avanzar"], ["RETROCEDER", "▼", "Reversa"], ["GIRO_IZQUIERDA", "◀", "Girar izq."], ["GIRO_DERECHA", "▶", "Girar der."],
   ["ROTACION_IZQUIERDA", "↺", "Cabina izq."], ["ROTACION_DERECHA", "↻", "Cabina der."], ["PALA_ARRIBA", "⤒", "Subir pala"], ["PALA_ABAJO", "⤓", "Bajar pala"],
-  ["ENCENDER_APAGAR", "⏻", "Prender / apagar"], ["AUX_1", "?", "Aux 1 · Q5"], ["AUX_2", "?", "Aux 2 · Q6"], ["AUX_3", "?", "Aux 3 · Q7"],
-];
+  ["ENCENDER_APAGAR", "⏻", "Prender / apagar"],
+];   // AUX_1..3 (Q5–Q7) siguen en el catálogo de RDS, pero se ocultaron en la página: no tienen nada conectado
 const INTERRUPTOR = "ENCENDER_APAGAR", PULSO_INTERRUPTOR = 400;   // por voz no se puede mantener: pulso corto
 // botones directos: la señal dura lo que dura oprimido, sin pulso al soltar
-const DIRECTOS = new Set([INTERRUPTOR, "AUX_1", "AUX_2", "AUX_3"]);
+const DIRECTOS = new Set([INTERRUPTOR]);
+const OCULTO = c => /^AUX_/i.test(c);   // los Aux no funcionan: ni botones, ni teclas, ni voz, ni pasos del copiloto
 const ETIQUETA = Object.fromEntries(CMDS.map(([c, , t]) => [c, t.toUpperCase()]));
 ETIQUETA.DETENER = "DETENIDO";
 
@@ -712,7 +713,7 @@ $("btnLlave").addEventListener("click", () => {
 
 /* ============================ motor de movimiento ============================ */
 // mantener: continuo renovado · soltar antes del pulso: completa un pulso exacto · soltar después: alto
-// botones directos (prender/apagar y Aux): señal mientras se oprime, al soltar se corta
+// botón directo (prender/apagar): señal mientras se oprime, al soltar se corta
 const mov = { c: null, t0: 0, renovar: null };
 let plan = null;
 function marcar(c) { document.querySelectorAll(".btn[data-c]").forEach(b => b.classList.toggle("activo", b.dataset.c === c)); }
@@ -733,7 +734,7 @@ function detenerTodo(enviar = true) {
 }
 document.querySelectorAll("[data-stop]").forEach(b => b.addEventListener("click", () => detenerTodo()));
 
-/* --- botones (12) --- */
+/* --- botones (9: los 8 movimientos y prender/apagar) --- */
 function crearBoton(c, ico, txt, i, extra = "") {
   const b = document.createElement("button");
   b.className = "btn sinsel " + extra; b.dataset.c = c;
@@ -743,7 +744,7 @@ function crearBoton(c, ico, txt, i, extra = "") {
   b.addEventListener("contextmenu", e => e.preventDefault());
   return b;
 }
-const claseBoton = c => c === INTERRUPTOR ? "poder" : c.startsWith("AUX_") ? "aux2" : "";
+const claseBoton = c => c === INTERRUPTOR ? "poder" : "";
 CMDS.forEach(([c, ico, txt], i) => $("rejilla").append(crearBoton(c, ico, txt, i + 1, claseBoton(c))));
 CMDS.slice(8).forEach(([c, ico, txt], i) => $("auxSticks").append(crearBoton(c, ico, txt, i + 9, claseBoton(c))));
 
@@ -784,7 +785,7 @@ const sticks = [crearStick($("stickIzq")), crearStick($("stickDer"))];
 /* --- teclado --- */
 const TECLAS = { w: "AVANZAR", arrowup: "AVANZAR", s: "RETROCEDER", arrowdown: "RETROCEDER", a: "GIRO_IZQUIERDA", arrowleft: "GIRO_IZQUIERDA",
   d: "GIRO_DERECHA", arrowright: "GIRO_DERECHA", q: "ROTACION_IZQUIERDA", e: "ROTACION_DERECHA", r: "PALA_ARRIBA", f: "PALA_ABAJO",
-  "p": "ENCENDER_APAGAR", "1": "AUX_1", "2": "AUX_2", "3": "AUX_3" };
+  "p": "ENCENDER_APAGAR" };
 addEventListener("keydown", e => {
   if (e.target.matches("input")) return;
   if (e.key === " ") { e.preventDefault(); return detenerTodo(); }
@@ -832,7 +833,7 @@ async function copiloto(texto) {
     try {
       const resp = await fetch(`${API_BASE}/vehiculos/${vehiculo}/copiloto`, { method: "POST",
         headers: { "Content-Type": "application/json", "X-API-Key": leer("iot_api_key", "") }, body: JSON.stringify({ texto }) });
-      if (resp.ok) { r = await resp.json(); $("quien").textContent = "COPILOTO · CLAUDE"; }
+      if (resp.ok) { r = await resp.json(); r.pasos = (r.pasos || []).filter(p => !OCULTO(p.comando)); $("quien").textContent = "COPILOTO · CLAUDE"; }
     } catch {}
   }
   if (!r) { r = planLocal(texto); $("quien").textContent = "COPILOTO · RUTINAS"; }
@@ -885,11 +886,9 @@ function interpretar(frase) {
   const t = " " + limpio.replace(/\bsin parar\b/g, " ") + " ", hay = re => re.test(t);
   if (hay(/\b(alto|parate|parale|detente|deten|detener|stop|frena|quieto)\b/) || /^(para|parar|ya)$/.test(limpio)) return { c: "DETENER" };
   let c = null;
-  const aux = t.match(/\b(auxiliar|aux)\s+(1|2|3|uno|dos|tres)\b/);
   const izq = hay(/\bizquierda\b/), der = hay(/\bderecha\b/);
   if (hay(/\b(prende|prender|enciende|encender|apaga|apagar)\b/)) return { c: INTERRUPTOR, ms: PULSO_INTERRUPTOR };
-  if (aux) c = `AUX_${NUM[aux[2]] || aux[2]}`;
-  else if (hay(/\b(sube|subir|subela|levanta|arriba)\b/)) c = "PALA_ARRIBA";
+  if (hay(/\b(sube|subir|subela|levanta|arriba)\b/)) c = "PALA_ARRIBA";
   else if (hay(/\b(baja|bajar|bajala|abajo)\b/)) c = "PALA_ABAJO";
   else if (hay(/\b(cabina|torre|rota|rotar|voltea)\b/) && (izq || der)) c = izq ? "ROTACION_IZQUIERDA" : "ROTACION_DERECHA";
   else if (izq) c = "GIRO_IZQUIERDA"; else if (der) c = "GIRO_DERECHA";
