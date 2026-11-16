@@ -279,13 +279,51 @@ $("exFormLlave").addEventListener("submit", e => {
   pintarSala();
 });
 
+/* ---------- pantalla completa (botón ⛶ o tecla F) y pantalla siempre encendida mientras dure ---------- */
+const raiz = document.documentElement;
+const enPantalla = () => document.fullscreenElement || document.webkitFullscreenElement;
+let candado = null, cambiando = false;
+async function pantallaCompleta() {
+  if (cambiando) return;                       // un segundo toque mientras el navegador hace el cambio no cuenta
+  cambiando = true;
+  try {
+    const p = enPantalla() ? (document.exitFullscreen?.() ?? document.webkitExitFullscreen?.())
+                           : (raiz.requestFullscreen?.({ navigationUI: "hide" }) ?? raiz.webkitRequestFullscreen?.());
+    await Promise.race([p, new Promise(ok => setTimeout(ok, 3000))]);   // si el navegador nunca contesta, el botón no se traba
+  } catch { aviso("El navegador no dejó poner pantalla completa"); }
+  finally { cambiando = false; alCambiarPantalla(); }   // por si el navegador no avisa con fullscreenchange
+}
+let ultimoEstado = null;
+async function alCambiarPantalla() {
+  const on = !!enPantalla(), b = $("exPantalla");
+  b.setAttribute("aria-pressed", String(on)); b.textContent = on ? "⛶ Salir de pantalla completa" : "⛶ Pantalla completa";
+  if (on === ultimoEstado && (!on || (candado && !candado.released))) return;
+  ultimoEstado = on;
+  try {   // que la tablet no se apague a media expo
+    if (on && "wakeLock" in navigator) candado = await navigator.wakeLock.request("screen");
+    else if (!on && candado) { await candado.release(); candado = null; }
+  } catch {}
+}
+if (!(raiz.requestFullscreen || raiz.webkitRequestFullscreen)) $("exPantalla").hidden = true;   // iPhone: no se puede
+$("exPantalla").addEventListener("click", pantallaCompleta);
+document.addEventListener("fullscreenchange", alCambiarPantalla);
+document.addEventListener("webkitfullscreenchange", alCambiarPantalla);
+// el navegador suelta el candado si la pestaña se oculta: al volver se pide otra vez
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && enPantalla() && (!candado || candado.released)) alCambiarPantalla(); });
+addEventListener("keydown", e => {
+  if (e.key.toLowerCase() === "f" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest("input, textarea, select")) { e.preventDefault(); pantallaCompleta(); }
+});
+
 let tAviso = null;
 function aviso(t) { const a = $("exAviso"); a.textContent = t; clearTimeout(tAviso); tAviso = setTimeout(() => (a.textContent = ""), 5000); }
 
 /* ============================ arranque ============================ */
 const show = crearShow({ E, enviar, aviso, API_BASE, VEHICULO });
 const fReloj = new Intl.DateTimeFormat("es-MX", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-setInterval(() => { $("exReloj").textContent = fReloj.format(new Date()); revisarEsp(); }, 1000);
+setInterval(() => {
+  $("exReloj").textContent = fReloj.format(new Date()); revisarEsp();
+  if (!cambiando && String(!!enPantalla()) !== $("exPantalla").getAttribute("aria-pressed")) alCambiarPantalla();   // p. ej. salió con Esc
+}, 1000);
 $("exReloj").textContent = fReloj.format(new Date());
 pintarSala();
 revisarEsp();
